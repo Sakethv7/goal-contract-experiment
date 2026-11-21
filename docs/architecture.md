@@ -1121,7 +1121,7 @@ Measurement notes:
 
 - T quiz score (0.63 at K = 6) is not a knowledge measure. In 3 T runs the stop hook took over the quiz turn and the agent replied about hook findings, so no letter was parsed. L, which has no stop hook, scored 0.97.
 - N at K = 1 (0.25) is far below N in S8b (8 of 8). The likely difference is that each S9 decision comes with a task, so the agent works on the task and does not update its notes. This is a reading, not a test.
-- In 14 runs an agent tried to search your Granola meetings for the decisions. All 24 calls were denied by the permission settings and returned no data. The trial sessions see your connected MCP servers. See open question 49.
+- In 14 runs an agent tried to search a connected meeting-notes tool for the decisions. All 24 calls were denied by the permission settings and returned no data. The trial sessions see your connected MCP servers. See open question 49.
 
 ## Open questions (after the S9 run)
 
