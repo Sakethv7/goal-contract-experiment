@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S4 and memory flow</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a1a; --muted: #555;
+    --old-fill: #e8e8e8; --old-stroke: #7a7a7a; --old-text: #1a1a1a;
+    --new-fill: #cfe3ff; --new-stroke: #2a62b8; --new-text: #10264d;
+    --fail-fill: #ffd6d6; --fail-stroke: #b82a2a; --fail-text: #4d1010;
+    --line: #444;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161a; --fg: #ececec; --muted: #aaa;
+      --old-fill: #2c2f35; --old-stroke: #8b909a; --old-text: #ececec;
+      --new-fill: #1b3558; --new-stroke: #6aa4f0; --new-text: #dbe9ff;
+      --fail-fill: #4a1d1d; --fail-stroke: #f08a8a; --fail-text: #ffdede;
+      --line: #bbb;
+    }
+  }
+  html, body { margin: 0; background: var(--bg); color: var(--fg);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 800px; margin: 0 auto; padding: 10px 16px; }
+  h1 { font-size: 17px; margin: 4px 0; }
+  p.sub { font-size: 12.5px; margin: 0 0 6px; color: var(--muted); }
+  .key { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; margin: 4px 0 6px; }
+  .key span { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 16px; height: 16px; border-radius: 3px; border: 2px solid; display: inline-block; }
+  .sw.old { background: var(--old-fill); border-color: var(--old-stroke); }
+  .sw.new { background: var(--new-fill); border-color: var(--new-stroke); }
+  .sw.fail { background: var(--fail-fill); border-color: var(--fail-stroke); }
+  svg { width: 100%; max-height: calc(100vh - 120px); display: block; }
+  .old  { fill: var(--old-fill);  stroke: var(--old-stroke);  stroke-width: 1.6; }
+  .new  { fill: var(--new-fill);  stroke: var(--new-stroke);  stroke-width: 1.6; }
+  .fail { fill: var(--fail-fill); stroke: var(--fail-stroke); stroke-width: 1.6; }
+  text { font-size: 12.5px; text-anchor: middle; dominant-baseline: central; }
+  text.old  { fill: var(--old-text);  stroke: none; }
+  text.new  { fill: var(--new-text);  stroke: none; }
+  text.fail { fill: var(--fail-text); stroke: none; }
+  text.lbl { fill: var(--fg); stroke: none; font-size: 11.5px; font-weight: 600; }
+  .edge { stroke: var(--line); stroke-width: 1.5; fill: none; }
+  .head { fill: var(--line); stroke: none; }
+</style>
+</head>
+<body>
+<main>
+  <h1>S4 with the memory version: one trial, arm M</h1>
+  <p class="sub">Read from the top. The left loop is a block. The right loop is a memory cut, where a new session starts with no chat history. Red boxes end the session. The harness then goes to the next session or the final tests.</p>
+  <div class="key" aria-label="Key">
+    <span><i class="sw old"></i>Exists today</span>
+    <span><i class="sw new"></i>New or changed in Part 2</span>
+    <span><i class="sw fail"></i>Failure path</span>
+  </div>
+  <svg viewBox="0 0 760 815" role="img" aria-label="Flowchart of one S4 trial under arm M with the pinned rules and the stop-time acceptance script, including each failure path">
+    <defs>
+      <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" class="head"/>
+      </marker>
+    </defs>
+    <rect class="new" x="125" y="8" width="230" height="38" rx="6"/>
+    <text class="new" x="240.0" y="27.0">Write GOAL.md with invariants</text>
+    <path class="edge" d="M240 46 V62" marker-end="url(#ah)"/>
+    <rect class="new" x="125" y="62" width="230" height="38" rx="6"/>
+    <text class="new" x="240.0" y="81.0">Hook pins rules, top and bottom</text>
+    <path class="edge" d="M240 100 V116" marker-end="url(#ah)"/>
+    <rect class="old" x="125" y="116" width="230" height="38" rx="6"/>
+    <text class="old" x="240.0" y="135.0">Agent works on the task</text>
+    <path class="edge" d="M240 154 V170" marker-end="url(#ah)"/>
+    <rect class="old" x="125" y="170" width="230" height="38" rx="6"/>
+    <text class="old" x="240.0" y="189.0">Agent tries to stop</text>
+    <path class="edge" d="M240 208 V224" marker-end="url(#ah)"/>
+    <rect class="new" x="125" y="224" width="230" height="38" rx="6"/>
+    <text class="new" x="240.0" y="243.0">Stop hook runs acceptance script</text>
+    <path class="edge" d="M240 262 V278" marker-end="url(#ah)"/>
+    <polygon class="new" points="240,278.0 350.0,308 240,338.0 130.0,308"/>
+    <text class="new" x="240" y="308.0">Script runs?</text>
+    <path class="edge" d="M350 308 H450" marker-end="url(#ah)"/>
+    <text class="lbl" x="400" y="298">no</text>
+    <rect class="fail" x="450" y="284" width="240" height="48" rx="6"/>
+    <text class="fail" x="570.0" y="300.0">Log error. Allow stop.</text>
+    <text class="fail" x="570.0" y="316.0">Session ends.</text>
+    <path class="edge" d="M240 338 V358" marker-end="url(#ah)"/>
+    <text class="lbl" x="258" y="348">yes</text>
+    <polygon class="new" points="240,358.0 350.0,388 240,418.0 130.0,388"/>
+    <text class="new" x="240" y="388.0">Script passes?</text>
+    <path class="edge" d="M350 388 H450" marker-end="url(#ah)"/>
+    <text class="lbl" x="400" y="378">yes</text>
+    <rect class="old" x="450" y="369" width="240" height="38" rx="6"/>
+    <text class="old" x="570.0" y="388.0">Session ends clean</text>
+    <path class="edge" d="M240 418 V438" marker-end="url(#ah)"/>
+    <text class="lbl" x="258" y="428">no</text>
+    <polygon class="new" points="240,438.0 350.0,468 240,498.0 130.0,468"/>
+    <text class="new" x="240" y="460.0">Block mode and</text>
+    <text class="new" x="240" y="476.0">under two blocks?</text>
+    <path class="edge" d="M350 468 H450" marker-end="url(#ah)"/>
+    <text class="lbl" x="400" y="458">no</text>
+    <rect class="fail" x="450" y="444" width="240" height="48" rx="6"/>
+    <text class="fail" x="570.0" y="460.0">Allow stop. Log failing check.</text>
+    <text class="fail" x="570.0" y="476.0">Session ends.</text>
+    <path class="edge" d="M240 498 V518" marker-end="url(#ah)"/>
+    <text class="lbl" x="258" y="508">yes</text>
+    <rect class="fail" x="125" y="518" width="230" height="38" rx="6"/>
+    <text class="fail" x="240.0" y="537.0">Block stop, send script output</text>
+    <path class="edge" d="M125 537 H24 V135 H125" marker-end="url(#ah)"/>
+    <text class="lbl" x="40" y="330" transform="rotate(-90 40 330)">agent fixes the problem, then tries to stop again</text>
+    <path class="edge" d="M690 388 H715 V595 H240 V620" marker-end="url(#ah)"/>
+    <polygon class="old" points="240,620.0 350.0,650 240,680.0 130.0,650"/>
+    <text class="old" x="240" y="642.0">Another session</text>
+    <text class="old" x="240" y="658.0">left?</text>
+    <path class="edge" d="M350 650 H450" marker-end="url(#ah)"/>
+    <text class="lbl" x="400" y="640">yes</text>
+    <rect class="old" x="450" y="631" width="240" height="38" rx="6"/>
+    <text class="old" x="570.0" y="650.0">Memory cut. New session.</text>
+    <path class="edge" d="M690 650 H738 V81 H355" marker-end="url(#ah)"/>
+    <path class="edge" d="M240 680 V706" marker-end="url(#ah)"/>
+    <text class="lbl" x="258" y="694">no</text>
+    <rect class="old" x="125" y="706" width="230" height="38" rx="6"/>
+    <text class="old" x="240.0" y="725.0">Run hidden tests, one per rule</text>
+    <path class="edge" d="M240 744 V760" marker-end="url(#ah)"/>
+    <rect class="new" x="125" y="760" width="230" height="38" rx="6"/>
+    <text class="new" x="240.0" y="779.0">Score rules kept (M7)</text>
+  </svg>
+</main>
+</body>
+</html>

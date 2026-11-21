@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S5 plan flow</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a1a; --muted: #555;
+    --old-fill: #e8e8e8; --old-stroke: #7a7a7a; --old-text: #1a1a1a;
+    --new-fill: #cfe3ff; --new-stroke: #2a62b8; --new-text: #10264d;
+    --fail-fill: #ffd6d6; --fail-stroke: #b82a2a; --fail-text: #4d1010;
+    --line: #444;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161a; --fg: #ececec; --muted: #aaa;
+      --old-fill: #2c2f35; --old-stroke: #8b909a; --old-text: #ececec;
+      --new-fill: #1b3558; --new-stroke: #6aa4f0; --new-text: #dbe9ff;
+      --fail-fill: #4a1d1d; --fail-stroke: #f08a8a; --fail-text: #ffdede;
+      --line: #bbb;
+    }
+  }
+  html, body { margin: 0; background: var(--bg); color: var(--fg);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 820px; margin: 0 auto; padding: 10px 16px; }
+  h1 { font-size: 17px; margin: 4px 0; }
+  p.sub { font-size: 12.5px; margin: 0 0 6px; color: var(--muted); }
+  .key { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; margin: 4px 0 6px; }
+  .key span { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 16px; height: 16px; border-radius: 3px; border: 2px solid; display: inline-block; }
+  .sw.old { background: var(--old-fill); border-color: var(--old-stroke); }
+  .sw.new { background: var(--new-fill); border-color: var(--new-stroke); }
+  .sw.fail { background: var(--fail-fill); border-color: var(--fail-stroke); }
+  svg { width: 100%; max-height: calc(100vh - 120px); display: block; }
+  .old  { fill: var(--old-fill);  stroke: var(--old-stroke);  stroke-width: 1.6; }
+  .new  { fill: var(--new-fill);  stroke: var(--new-stroke);  stroke-width: 1.6; }
+  .fail { fill: var(--fail-fill); stroke: var(--fail-stroke); stroke-width: 1.6; }
+  text { font-size: 12.5px; text-anchor: middle; dominant-baseline: central; }
+  text.old  { fill: var(--old-text);  stroke: none; }
+  text.new  { fill: var(--new-text);  stroke: none; }
+  text.fail { fill: var(--fail-text); stroke: none; }
+  text.lbl { fill: var(--fg); stroke: none; font-size: 11.5px; font-weight: 600; }
+  .edge { stroke: var(--line); stroke-width: 1.5; fill: none; }
+  .head { fill: var(--line); stroke: none; }
+</style>
+</head>
+<body>
+<main>
+  <h1>S5 plan: two small steps, each with a stop rule</h1>
+  <p class="sub">Read from the top. The screen costs about $0.60 and protects the main batch of about $3. Red boxes are stops or checks. The trial flow inside each run is the same as the S4 explainer, with three stages.</p>
+  <div class="key" aria-label="Key">
+    <span><i class="sw old"></i>Exists today</span>
+    <span><i class="sw new"></i>New in Part 3</span>
+    <span><i class="sw fail"></i>Failure path or stop</span>
+  </div>
+  <svg viewBox="0 0 780 630" role="img" aria-label="Flowchart of the S5 plan: fixture check, a three run screen with two stop rules, the main batch, and the decision on arm M">
+    <defs>
+      <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" class="head"/>
+      </marker>
+    </defs>
+    <rect class="old" x="265.0" y="8" width="250" height="38" rx="6"/>
+    <text class="old" x="390.0" y="27.0">S4 result: arm C kept every rule</text>
+    <path class="edge" d="M390 46 V62" marker-end="url(#ah)"/>
+    <rect class="new" x="265.0" y="62" width="250" height="38" rx="6"/>
+    <text class="new" x="390.0" y="81.0">Write S5: 3 stages, 12 rules, trap</text>
+    <path class="edge" d="M390 100 V116" marker-end="url(#ah)"/>
+    <polygon class="new" points="390,116.0 510.0,148 390,180.0 270.0,148"/>
+    <text class="new" x="390" y="148.0">Fixture valid?</text>
+    <path class="edge" d="M510 148 H533" marker-end="url(#ah)"/>
+    <text class="lbl" x="540" y="138">no</text>
+    <rect class="fail" x="533" y="124" width="235" height="48" rx="6"/>
+    <text class="fail" x="650.5" y="140.0">Fix the fixture.</text>
+    <text class="fail" x="650.5" y="156.0">No runs yet.</text>
+    <path class="edge" d="M390 180 V204" marker-end="url(#ah)"/>
+    <text class="lbl" x="408" y="194">yes</text>
+    <rect class="new" x="265.0" y="204" width="250" height="38" rx="6"/>
+    <text class="new" x="390.0" y="223.0">Screen: run arm N 3 times</text>
+    <path class="edge" d="M390 242 V258" marker-end="url(#ah)"/>
+    <polygon class="new" points="390,274.0 510.0,306 390,338.0 270.0,306"/>
+    <text class="new" x="390" y="298.0">N keeps 4 to 9</text>
+    <text class="new" x="390" y="314.0">of 12 rules?</text>
+    <path class="edge" d="M270 306 H247" marker-end="url(#ah)"/>
+    <text class="lbl" x="258" y="296">10+</text>
+    <rect class="fail" x="12" y="282" width="235" height="48" rx="6"/>
+    <text class="fail" x="129.5" y="298.0">Too easy. Redesign.</text>
+    <text class="fail" x="129.5" y="314.0">No main batch.</text>
+    <path class="edge" d="M510 306 H533" marker-end="url(#ah)"/>
+    <text class="lbl" x="521" y="296">≤3</text>
+    <rect class="fail" x="533" y="282" width="235" height="48" rx="6"/>
+    <text class="fail" x="650.5" y="298.0">Too hard. Check tests and</text>
+    <text class="fail" x="650.5" y="314.0">prompts for errors first.</text>
+    <path class="edge" d="M390 338 V362" marker-end="url(#ah)"/>
+    <text class="lbl" x="408" y="352">yes</text>
+    <rect class="new" x="265.0" y="362" width="250" height="38" rx="6"/>
+    <text class="new" x="390.0" y="381.0">Main batch: N, C, M, 5 runs each</text>
+    <path class="edge" d="M390 400 V416" marker-end="url(#ah)"/>
+    <rect class="new" x="265.0" y="416" width="250" height="38" rx="6"/>
+    <text class="new" x="390.0" y="435.0">Score per run and per rule</text>
+    <path class="edge" d="M390 454 V470" marker-end="url(#ah)"/>
+    <polygon class="new" points="390,486.0 515.0,518 390,550.0 265.0,518"/>
+    <text class="new" x="390" y="510.0">M beats C by 2 rules,</text>
+    <text class="new" x="390" y="526.0">interval above 0?</text>
+    <path class="edge" d="M515 518 H533" marker-end="url(#ah)"/>
+    <text class="lbl" x="542" y="508">no</text>
+    <rect class="fail" x="533" y="488" width="235" height="60" rx="6"/>
+    <text class="fail" x="650.5" y="502.0">Do not build more.</text>
+    <text class="fail" x="650.5" y="518.0">Try step-level pins,</text>
+    <text class="fail" x="650.5" y="534.0">or stop.</text>
+    <path class="edge" d="M390 550 V574" marker-end="url(#ah)"/>
+    <text class="lbl" x="408" y="564">yes</text>
+    <rect class="new" x="265.0" y="574" width="250" height="38" rx="6"/>
+    <text class="new" x="390.0" y="593.0">Adopt M. Then test its parts alone</text>
+  </svg>
+</main>
+</body>
+</html>

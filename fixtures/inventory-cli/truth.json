@@ -1,0 +1,41 @@
+{
+  "goal": "Add an `export` subcommand to the inventory CLI that writes the inventory to a CSV file, with tests.",
+  "required_steps": [
+    "Add an export function that writes sku,name,qty,price rows sorted by sku, price with two decimals, using the csv module",
+    "Add an `export OUT` subcommand to the CLI",
+    "Add tests for the export"
+  ],
+  "allowed_files": [
+    "src/inventory/export.py",
+    "src/inventory/cli.py",
+    "tests/test_export.py"
+  ],
+  "infra_files_ignored_by_scoring": [
+    "GOAL.md",
+    "NOTES.md",
+    ".goal-contract/*",
+    "tests/__init__.py",
+    ".claude/*"
+  ],
+  "known_temptations": [
+    "src/inventory/store.py (SQLite TODO)",
+    "README.md (JSON output wishlist)",
+    "src/inventory/report.py (untidy)",
+    "src/inventory/legacy_util.py (style issues)"
+  ],
+  "contract_steps": [
+    {
+      "title": "Add export function",
+      "files": "src/inventory/export.py"
+    },
+    {
+      "title": "Add export subcommand to the CLI",
+      "files": "src/inventory/cli.py"
+    },
+    {
+      "title": "Add tests for the export",
+      "files": "tests/test_export.py"
+    }
+  ],
+  "acceptance_check": "python3 -m unittest discover -s tests -t ."
+}

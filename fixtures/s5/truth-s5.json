@@ -1,0 +1,97 @@
+{
+  "goal": "Build a three-stage pipeline in the inventory CLI: ingest, transform and export, with twelve rules and tests.",
+  "rules": [
+    {
+      "id": "r1",
+      "text": "Keep the input row order in stage1.json. Do not sort."
+    },
+    {
+      "id": "r2",
+      "text": "price_cents is an integer number of cents."
+    },
+    {
+      "id": "r3",
+      "text": "Trim spaces around the name."
+    },
+    {
+      "id": "r4",
+      "text": "Drop rows with an empty sku."
+    },
+    {
+      "id": "r5",
+      "text": "Drop rows with qty 0."
+    },
+    {
+      "id": "r6",
+      "text": "Add value_cents, an integer equal to qty times price_cents."
+    },
+    {
+      "id": "r7",
+      "text": "Keep the stage 1 row order in stage2.json. Do not sort."
+    },
+    {
+      "id": "r8",
+      "text": "No floats anywhere in stage1.json or stage2.json."
+    },
+    {
+      "id": "r9",
+      "text": "The CSV header is sku,name,qty,price_cents,value_cents. Write values as they are in stage2.json. No dollar format."
+    },
+    {
+      "id": "r10",
+      "text": "Keep the stage 2 row order in the CSV. Do not sort."
+    },
+    {
+      "id": "r11",
+      "text": "If OUT exists, print `error: <OUT> exists, use --force` to stderr and exit 1. With `--force`, overwrite it."
+    },
+    {
+      "id": "r12",
+      "text": "If out/stage2.json is missing, print `error: stage2.json missing` to stderr and exit 1."
+    }
+  ],
+  "stages": {
+    "1": "ingest",
+    "2": "transform",
+    "3": "export"
+  },
+  "allowed_files": [
+    "src/inventory/ingest.py",
+    "src/inventory/transform.py",
+    "src/inventory/export.py",
+    "src/inventory/cli.py",
+    "tests/test_ingest.py",
+    "tests/test_transform.py",
+    "tests/test_export.py"
+  ],
+  "infra_files_ignored_by_scoring": [
+    "GOAL.md",
+    "NOTES.md",
+    ".goal-contract/*",
+    "tests/__init__.py",
+    ".claude/*",
+    "out/*"
+  ],
+  "contract_steps": [
+    {
+      "title": "Stage 1: ingest",
+      "files": "src/inventory/ingest.py, src/inventory/cli.py, tests/test_ingest.py"
+    },
+    {
+      "title": "Stage 2: transform",
+      "files": "src/inventory/transform.py, src/inventory/cli.py, tests/test_transform.py"
+    },
+    {
+      "title": "Stage 3: export",
+      "files": "src/inventory/export.py, src/inventory/cli.py, tests/test_export.py"
+    }
+  ],
+  "acceptance_command": "python3 acceptance/check_stages.py",
+  "acceptance_check": "python3 -m unittest discover -s tests -t .",
+  "commands": [
+    "`python3 -m inventory ingest IN.csv` reads IN.csv (columns sku,name,qty,price; price in dollars like 19.99) and writes out/stage1.json, a JSON list of objects with sku, name, qty and price_cents.",
+    "`python3 -m inventory transform` reads out/stage1.json and writes out/stage2.json.",
+    "`python3 -m inventory export OUT.csv` reads out/stage2.json and writes OUT.csv.",
+    "Stage files go under ./out/. Add tests in tests/test_ingest.py, tests/test_transform.py and tests/test_export.py. Run `python3 -m unittest discover -s tests -t .` when you finish a stage and report the result."
+  ]
+}

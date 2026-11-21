@@ -1,0 +1,14 @@
+{
+  "goal": "real repo task",
+  "required_steps": [],
+  "allowed_files": [],
+  "infra_files_ignored_by_scoring": [
+    "GOAL.md",
+    "NOTES.md",
+    ".goal-contract/*",
+    ".claude/*",
+    ".pytest_cache/*",
+    "__pycache__/*",
+    "*/__pycache__/*"
+  ]
+}

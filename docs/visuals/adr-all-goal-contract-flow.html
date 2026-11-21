@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Goal Contract flow</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a1a; --muted: #555;
+    --old-fill: #e8e8e8; --old-stroke: #7a7a7a; --old-text: #1a1a1a;
+    --new-fill: #cfe3ff; --new-stroke: #2a62b8; --new-text: #10264d;
+    --fail-fill: #ffd6d6; --fail-stroke: #b82a2a; --fail-text: #4d1010;
+    --line: #444;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161a; --fg: #ececec; --muted: #aaa;
+      --old-fill: #2c2f35; --old-stroke: #8b909a; --old-text: #ececec;
+      --new-fill: #1b3558; --new-stroke: #6aa4f0; --new-text: #dbe9ff;
+      --fail-fill: #4a1d1d; --fail-stroke: #f08a8a; --fail-text: #ffdede;
+      --line: #bbb;
+    }
+  }
+  html, body { margin: 0; background: var(--bg); color: var(--fg);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 10px 16px; }
+  h1 { font-size: 17px; margin: 4px 0; }
+  p.sub { font-size: 12.5px; margin: 0 0 6px; color: var(--muted); }
+  .key { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; margin: 4px 0 6px; }
+  .key span { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 16px; height: 16px; border-radius: 3px; border: 2px solid; display: inline-block; }
+  .sw.old { background: var(--old-fill); border-color: var(--old-stroke); }
+  .sw.new { background: var(--new-fill); border-color: var(--new-stroke); }
+  .sw.fail { background: var(--fail-fill); border-color: var(--fail-stroke); }
+  svg { width: 100%; max-height: calc(100vh - 120px); display: block; }
+  .old  { fill: var(--old-fill);  stroke: var(--old-stroke);  stroke-width: 1.6; }
+  .new  { fill: var(--new-fill);  stroke: var(--new-stroke);  stroke-width: 1.6; }
+  .fail { fill: var(--fail-fill); stroke: var(--fail-stroke); stroke-width: 1.6; }
+  text { font-size: 12.5px; text-anchor: middle; dominant-baseline: central; }
+  text.old  { fill: var(--old-text);  stroke: none; }
+  text.new  { fill: var(--new-text);  stroke: none; }
+  text.fail { fill: var(--fail-text); stroke: none; }
+  text.lbl { fill: var(--fg); stroke: none; font-size: 11.5px; font-weight: 600; }
+  .edge { stroke: var(--line); stroke-width: 1.5; fill: none; }
+  .head { fill: var(--line); stroke: none; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Goal Contract: what happens in one session</h1>
+  <p class="sub">Read from the top. The loop on the left shows the block path. Every red box is an exit or a path where the agent gets no help, or only a log line.</p>
+  <div class="key" aria-label="Key">
+    <span><i class="sw old"></i>Exists today in Claude Code</span>
+    <span><i class="sw new"></i>New in this project</span>
+    <span><i class="sw fail"></i>New failure path</span>
+  </div>
+
+  <svg viewBox="0 0 720 760" role="img" aria-label="Flowchart of a session with the goal contract hooks, including each failure path">
+    <defs>
+      <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" class="head"/>
+      </marker>
+    </defs>
+
+    <!-- Main column -->
+    <rect class="old" x="250" y="14" width="220" height="38" rx="6"/>
+    <text class="old" x="360" y="33">Claude Code starts a session</text>
+
+    <path class="edge" d="M360 52 V72" marker-end="url(#ah)"/>
+
+    <rect class="new" x="250" y="72" width="220" height="38" rx="6"/>
+    <text class="new" x="360" y="91">Start hook adds GOAL.md to context</text>
+
+    <path class="edge" d="M360 110 V130" marker-end="url(#ah)"/>
+
+    <polygon class="new" points="360,130 460,160 360,190 260,160"/>
+    <text class="new" x="360" y="160">GOAL.md exists?</text>
+
+    <path class="edge" d="M460 160 H520" marker-end="url(#ah)"/>
+    <text class="lbl" x="490" y="150">no</text>
+    <rect class="fail" x="520" y="136" width="184" height="48" rx="6"/>
+    <text class="fail" x="612" y="153">Session runs with no contract.</text>
+    <text class="fail" x="612" y="170">End. Repo has not opted in.</text>
+
+    <path class="edge" d="M360 190 V212" marker-end="url(#ah)"/>
+    <text class="lbl" x="378" y="202">yes</text>
+
+    <rect class="old" x="250" y="212" width="220" height="38" rx="6"/>
+    <text class="old" x="360" y="231">Agent works on the task</text>
+
+    <path class="edge" d="M360 250 V270" marker-end="url(#ah)"/>
+
+    <rect class="new" x="250" y="270" width="220" height="38" rx="6"/>
+    <text class="new" x="360" y="289">Agent updates step status, evidence</text>
+
+    <path class="edge" d="M360 308 V328" marker-end="url(#ah)"/>
+
+    <rect class="old" x="250" y="328" width="220" height="38" rx="6"/>
+    <text class="old" x="360" y="347">Agent tries to stop</text>
+
+    <path class="edge" d="M360 366 V386" marker-end="url(#ah)"/>
+
+    <rect class="new" x="250" y="386" width="220" height="38" rx="6"/>
+    <text class="new" x="360" y="405">Stop hook runs the checker</text>
+
+    <path class="edge" d="M360 424 V448" marker-end="url(#ah)"/>
+
+    <polygon class="new" points="360,448 460,478 360,508 260,478"/>
+    <text class="new" x="360" y="478">GOAL.md parses?</text>
+
+    <path class="edge" d="M460 478 H520" marker-end="url(#ah)"/>
+    <text class="lbl" x="490" y="468">no</text>
+    <rect class="fail" x="520" y="454" width="184" height="48" rx="6"/>
+    <text class="fail" x="612" y="471">Log malformed file.</text>
+    <text class="fail" x="612" y="488">Allow stop. End.</text>
+
+    <path class="edge" d="M360 508 V532" marker-end="url(#ah)"/>
+    <text class="lbl" x="378" y="522">yes</text>
+
+    <polygon class="new" points="360,532 460,562 360,592 260,562"/>
+    <text class="new" x="360" y="562">Any findings?</text>
+
+    <path class="edge" d="M260 562 H180" marker-end="url(#ah)"/>
+    <text class="lbl" x="220" y="552">no</text>
+    <rect class="old" x="56" y="543" width="124" height="38" rx="6"/>
+    <text class="old" x="118" y="562">Session ends clean</text>
+
+    <path class="edge" d="M360 592 V616" marker-end="url(#ah)"/>
+    <text class="lbl" x="378" y="606">yes</text>
+
+    <polygon class="new" points="360,616 460,646 360,676 260,646"/>
+    <text class="new" x="360" y="639">Block mode and</text>
+    <text class="new" x="360" y="655">under two blocks?</text>
+
+    <path class="edge" d="M460 646 H520" marker-end="url(#ah)"/>
+    <text class="lbl" x="490" y="636">no</text>
+    <rect class="fail" x="520" y="622" width="184" height="48" rx="6"/>
+    <text class="fail" x="612" y="639">Log warning. Allow stop</text>
+    <text class="fail" x="612" y="656">with open findings. End.</text>
+
+    <path class="edge" d="M360 676 V698" marker-end="url(#ah)"/>
+    <text class="lbl" x="378" y="688">yes</text>
+
+    <rect class="fail" x="250" y="698" width="220" height="40" rx="6"/>
+    <text class="fail" x="360" y="718">Block stop, send findings to agent</text>
+
+    <!-- Loop back to "Agent works" along the left side -->
+    <path class="edge" d="M250 718 H28 V231 H250" marker-end="url(#ah)"/>
+    <text class="lbl" x="44" y="460" transform="rotate(-90 44 460)">agent fixes findings, then tries to stop again</text>
+  </svg>
+</main>
+</body>
+</html>

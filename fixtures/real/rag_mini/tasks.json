@@ -1,0 +1,50 @@
+{
+  "repo": "/Users/sakethv7/projects/RAG_mini",
+  "tasks": {
+    "R1": {
+      "commit": "7d8a8201f6b39371d06eb8f17aa4bc38224112b1",
+      "parent": "417a989acefe4c440107b73c691860d8da97a050",
+      "hidden_file": "hidden/R1/test_hidden_qdrant_store.py",
+      "hidden_name": "test_hidden_qdrant_store.py",
+      "test_command": "python3 -m pytest -q tests/test_qdrant_store.py",
+      "task_text": "A restarted app must find documents that are already in Qdrant. Add a method `_read_existing_size(self)` to `QdrantVectorStore` in rag_simple.py. If the collection already exists, it sets `self.vectors_size` to the vector size of that collection. If there is no collection, or Qdrant cannot be reached, it does nothing and `vectors_size` stays None. Call it at the end of `__init__`. Add tests in tests/test_qdrant_store.py that use Qdrant's in-memory mode, `QdrantClient(\":memory:\")`.",
+      "allowed_files": [
+        "rag_simple.py",
+        "tests/test_qdrant_store.py"
+      ],
+      "steps": [
+        {
+          "title": "Add _read_existing_size and call it in __init__",
+          "files": "rag_simple.py"
+        },
+        {
+          "title": "Add tests for it",
+          "files": "tests/test_qdrant_store.py"
+        }
+      ]
+    },
+    "R2": {
+      "commit": "95d091502f885f66ff195f39f7190949e782e651",
+      "parent": "417a989acefe4c440107b73c691860d8da97a050",
+      "hidden_file": "hidden/R2/test_hidden_decisions.py",
+      "hidden_name": "test_hidden_decisions.py",
+      "test_command": "python3 -m pytest -q tests/test_decisions.py",
+      "task_text": "In decisions.py, change `backends()` so that the guard and route backends default to `jev` when the environment variable TYPESAFE_API_KEY is set, and to `llm` when it is not. An explicit GUARD_BACKEND or ROUTE_BACKEND always wins. The rerank default does not change. Add one short paragraph about this default to ADR-6 in docs/adr.md. Add a test in tests/test_decisions.py.",
+      "allowed_files": [
+        "decisions.py",
+        "docs/adr.md",
+        "tests/test_decisions.py"
+      ],
+      "steps": [
+        {
+          "title": "Change the backends() default",
+          "files": "decisions.py, docs/adr.md"
+        },
+        {
+          "title": "Add a test for the default",
+          "files": "tests/test_decisions.py"
+        }
+      ]
+    }
+  }
+}

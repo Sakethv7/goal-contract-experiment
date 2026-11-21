@@ -1,0 +1,16 @@
+{
+  "rules": [
+    {"id": "d1", "text": "The CSV delimiter is a semicolon, not a comma.", "tokens": ["semicolon"]},
+    {"id": "d2", "text": "Dates are ISO 8601, written as YYYY-MM-DD.", "tokens": ["iso 8601", "yyyy-mm-dd"]},
+    {"id": "d3", "text": "Prices are integer cents, in the field price_cents.", "tokens": ["price_cents"]},
+    {"id": "d4", "text": "SKUs are written in uppercase.", "tokens": ["uppercase", "upper-case", "upper case"]},
+    {"id": "d5", "text": "Rows with qty 0 are skipped.", "tokens": ["qty 0", "quantity 0", "zero qty", "qty of 0"]},
+    {"id": "d6", "text": "The file starts with a UTF-8 BOM.", "tokens": ["bom"]},
+    {"id": "d7", "text": "If the input file is missing, exit with code 3.", "tokens": ["exit code 3", "exit 3", "code 3"]},
+    {"id": "d8", "text": "The error text for a missing input is `error: input missing`.", "tokens": ["error: input missing"]},
+    {"id": "d9", "text": "Never overwrite the output file unless `--force` is given.", "tokens": ["--force"]},
+    {"id": "d10", "text": "Never sort the rows. Keep the input order.", "tokens": ["never sort", "do not sort", "input order", "not sort"]},
+    {"id": "d11", "text": "Write a run log to out/run.log.", "tokens": ["run.log"]},
+    {"id": "d12", "text": "The first row is a header: sku;name;qty;price_cents;date.", "tokens": ["sku;name;qty;price_cents;date"]}
+  ]
+}

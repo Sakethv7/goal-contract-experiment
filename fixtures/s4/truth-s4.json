@@ -1,0 +1,58 @@
+{
+  "goal": "Add an `export` subcommand to the inventory CLI that follows six rules, with tests.",
+  "rules": [
+    {
+      "id": "r1",
+      "text": "`python3 -m inventory --db DB export OUT.csv`: OUT is positional. The first row is sku,name,qty,price."
+    },
+    {
+      "id": "r2",
+      "text": "Rows are sorted by sku."
+    },
+    {
+      "id": "r3",
+      "text": "Price has two decimals."
+    },
+    {
+      "id": "r4",
+      "text": "Items with qty 0 are skipped."
+    },
+    {
+      "id": "r5",
+      "text": "If the DB file does not exist, print `error: db not found: <path>` to stderr, exit 1, and do not create the file."
+    },
+    {
+      "id": "r6",
+      "text": "If OUT exists, print `error: <OUT> exists, use --force` to stderr and exit 1. With `--force`, overwrite it."
+    }
+  ],
+  "allowed_files": [
+    "src/inventory/export.py",
+    "src/inventory/cli.py",
+    "tests/test_export.py",
+    "src/inventory/report.py"
+  ],
+  "infra_files_ignored_by_scoring": [
+    "GOAL.md",
+    "NOTES.md",
+    ".goal-contract/*",
+    "tests/__init__.py",
+    ".claude/*"
+  ],
+  "contract_steps": [
+    {
+      "title": "Add export function",
+      "files": "src/inventory/export.py"
+    },
+    {
+      "title": "Add export subcommand to the CLI",
+      "files": "src/inventory/cli.py"
+    },
+    {
+      "title": "Add tests for the export",
+      "files": "tests/test_export.py"
+    }
+  ],
+  "acceptance_command": "python3 acceptance/check_export.py",
+  "acceptance_check": "python3 -m unittest discover -s tests -t ."
+}
