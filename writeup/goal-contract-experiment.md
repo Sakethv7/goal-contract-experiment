@@ -12,6 +12,35 @@ I then tested the question the project began with: does memory go stale, and doe
 
 All results are from one small model (Claude Haiku 5.5), on small synthetic tasks, with 10 runs per cell or fewer. Read them as a pilot, not as proof.
 
+## Every test at a glance
+
+The project ran eleven scenarios, in the order I built them. R1 and R2 share a row. Each row asked one question. Terms are explained after the table.
+
+| Test | Question | Result |
+| --- | --- | --- |
+| S1 | Does the skill keep a one-session task inside its scope? | Block mode: 0 of 10 runs changed an unplanned file. No skill: 5. Warn mode: 4. |
+| S2 | Does the skill wrongly stop a request that the human made mid-task? | No. Every arm did the cleanup. The approval rule cannot be verified, and I saw no abuse. |
+| S3 | After a memory cut, does a goal file bring the task back? | Yes. A plain notes file did as well as the skill, 10 of 10 each. |
+| S4 | Do six rules survive three memory cuts? | Notes, skill and skill with pins kept 6 of 6. No memory kept 0. The skill had fewer stray edits than notes (0 against 8). |
+| S5 | Do twelve rules survive a legacy trap and a vague request? | Too easy. Notes kept 12 of 12 in 3 runs, so I stopped. |
+| R1, R2 | Does the same hold on a real repo? | Memory beat no memory (10 of 10 against 0 of 10). Notes and skill tied. |
+| P1 | Do rules survive long sessions that compact? | Yes at 2 and 3 compactions. At 4, 1 of 2 runs lost the rule text. A lead only. |
+| S7 | Does memory go stale when the goal and the code change? | Could not tell. The repo held every fact, so even no memory passed. I stopped. |
+| S8 | Same, but only memory holds the goal change. Does a goal tree help? | Unclear. The prompt said "next session", and agents with the change in view waited. |
+| S8b | S8 with a clear prompt. | No memory: 3 of 3 stale. Notes: 0 of 8. Goal tree: 0 of 8. Flat list: 1 of 8. Any memory was enough. |
+
+Terms:
+
+- **Arm.** One way to set up the agent, compared with the others on the same test. A is no memory. N is a plain notes file. B and C are the skill in warn and block mode. M is the skill with pinned rules and a stop-time script. T is a goal tree with live checks. F is the same checks as a flat list.
+- **Scenario.** One scripted test. It is a list of sessions, each with a fixed prompt. S is "scenario", and the number is the order I built it. P1 is a probe, and R1 and R2 use a real repo.
+- **Session and memory cut.** A session is one run of the agent, from a prompt until it stops. A memory cut starts the next session with no chat history. The agent has only the repo and any memory files.
+- **Run and cell.** A run is one pass of one arm through one scenario. A cell is one arm in one scenario.
+- **Hidden tests.** Tests the agent cannot see. They score the result.
+- **Valid run.** A run where the setup worked. An invalid run is dropped and replaced, for example when session 1 did not build both parts.
+- **Stale.** A memory claim that was true when written and is false now.
+- **Threshold.** A pass or fail line that I write before the runs, such as "the tree has at least 4 fewer stale runs than notes". Writing it first stops me from moving the line after I see the result. A stop rule is a threshold that ends the work when it fires.
+- **Pilot.** A small, cheap trial that tests the setup, not the claim.
+
 ## Where the idea comes from
 
 The idea comes from Goal Layers, a public project by muhdarifx (github.com/muhdarifx/Goal-Layers). It is a Rust web app for Codex on Windows. I read its README only. I did not read its source. Three ideas from it shaped this work:
@@ -35,7 +64,7 @@ A later version added two options. One pins a short list of rules at the top and
 
 The task is a small Python inventory CLI. Hidden tests, which the agent cannot see, score the result. Each run uses a fresh copy of the repo. Trials ignore my global Claude Code settings. A probe checks this before every batch. I pinned the model to `claude-haiku-5-5`.
 
-Arms: A is no skill and no notes. N is a plain `NOTES.md` with the task text. B is the skill in warn mode. C is the skill in block mode. M is C plus pinned rules and the stop-time script.
+Arms: A is no skill and no notes. N is a plain `NOTES.md` with the task text. B is the skill in warn mode. C is the skill in block mode. M is C plus pinned rules and the stop-time script. T and F were added for the staleness tests (S7, S8 and S8b). T is a goal tree with live checks and a log of human prompts. F has the same checks and log, as a flat list.
 
 Scenarios:
 
@@ -45,6 +74,7 @@ Scenarios:
 - S4: six rules, three memory cuts, and a cleanup request.
 - S5: three stages, twelve rules, a legacy file that breaks five of them, and a vague request.
 - P1: a probe of long sessions. It forces compactions and checks whether 12 rules survive. See its own section below.
+- S7, S8 and S8b: the staleness tests. Session 1 builds an export command. Session 2 changes a rule. Session 3 says "Continue." They are described in their own sections below.
 - R1 and R2: two replayed commits from a real repo of mine. A small Python project with 52 commits. The agent starts from the parent commit and gets a task text. The repo owner's own test from that commit is the hidden score. The agent loses its chat history after 3 turns. Only arms A, N and C ran here.
 
 ## Results
@@ -174,7 +204,9 @@ By the thresholds:
 - **P4c failed.** F had 1 stale run and T had 0, a gap of 1, not 3.
 - **P4d passed.** T cost 1.1 times N.
 
-So the agents applied the change whenever any memory held it. I read the end of one N run. The notes file recorded the change, and the agent updated the sort, the tests, the README and the notes. I did not read the one stale F run (F-S8b-03), and I do not know why it failed.
+So the agents applied the change whenever any memory held it. I read the end of one N run. The notes file recorded the change, and the agent updated the sort, the tests, the README and the notes. I later read the start of session 3 in the one stale F run (F-S8b-03) and its diff. Its GOAL.md rule (2) said "From the next session on, rows are sorted by qty... do not change the sort in this session". That text was in the run's GOAL.md diff. The agent saw it again in session 3, next to the prompt that said the change was now in force, and it kept the sort by sku. So the stale claim was a time-relative sentence in the memory file, "this session", that went false when the session changed. I did not read the whole transcript, and one run is one example.
+
+I also cross-checked all 27 valid runs against their diffs. Each run that scored not stale sorts by qty in its diff, and each run that scored stale does not. The score and the diffs agree.
 
 What this supports: with a clear prompt, a plain notes file kept the change in 8 of 8 runs, and a goal tree added no gain on this task. What it does not support: any claim that the tree never helps. The task is one rule, one change and three sessions. A longer or messier project may differ. I also did not test an arm that only repeats the goal text.
 
@@ -197,7 +229,8 @@ What this supports: with a clear prompt, a plain notes file kept the change in 8
 - 10 runs per cell give wide intervals. S5 had 3 runs.
 - I chose the rules, the hidden tests and the traps. I may have tuned the difficulty without meaning to.
 - P1 ran arm A only, on Haiku, with a small window that I set to force compactions. Arms K and C did not run, because the stop rule applied. It has no test of whether rules are obeyed during coding.
-- S8 and S8b have one fixture, one goal change and short sessions. In S8 the stale score could not tell forgetting from waiting. I read 3 of the 27 S8 transcripts, and one end message in S8b. I did not read the one stale S8b run in arm F.
+- S8 and S8b have one fixture, one goal change and short sessions. In S8 the stale score could not tell forgetting from waiting. I read 3 of the 27 S8 transcripts, and one end message in S8b. In S8b I read the end message of one N run, and the start and diff of the one stale F run, and I checked all 27 diffs against the score.
+- Eight runs per arm can only separate large gaps. For 0 stale of 8 against a second arm, Fisher's exact test gives p = 0.077 at 4 stale of 8 and p = 0.026 at 5 of 8. A gap of 3 of 8 (p = 0.2) or less cannot be told from chance. So "T and N tie" means "no gap of 5 or more of 8", not "no gap". Arm A had 3 runs, enough only because all 3 were stale (p = 0.006 against 8 of 8 not stale).
 - I did not test an arm that only repeats the goal text at session start. Published work on instruction loss after compaction suggests that one restatement does much of the work. I cannot say how much of the tree arm's effect that would explain.
 - A model judge for goal recall was built but not run.
 - The phrase list that detects false completion is a rough filter.
@@ -221,6 +254,14 @@ I list these so a reader can discount the results.
 11. I first planned S8 around a new empty repo. I changed to the existing fixture, because S8 already builds a new feature and holds the change only in memory. The empty-repo version needed a new fixture and would not test memory harder.
 12. I scored by the rule I wrote before the run. I did not change the prompt, caps or thresholds after the first S8 run, even after I saw that agents waited. The S8 design predicted this risk (open question 36).
 13. S8b changed the session 3 prompt after I saw the S8 result. I made it a new scenario with thresholds written first, and I report S8 unchanged. I ran it once. The harness tests (44) passed in the same command as the batch, so a failure would not have stopped the run.
+
+## What I would do differently
+
+I would run a one-run pilot of each arm before I write the thresholds. That means one cheap run of every arm on the new scenario, about $0.07 each, and a read of the transcripts. The pilot tests the design, not the claim. I would exclude pilot runs from every result.
+
+This would have saved two batches. In S7, the pilot would have shown that arm A, with no memory, passed everything, because the repo held every fact. In S8, it would have shown that agents waited on the words "next session". I found both problems only after I had written thresholds and run batches. One pilot costs about $0.30 for four arms. A failed batch cost about $2.
+
+The pilot has a risk. If I tune the design until my favorite arm wins, the result is worthless. So the pilot may change only the design, such as the prompt or the fixture. It may not change the thresholds, and I would write the thresholds after the pilot and before the main runs.
 
 ## What I would do next
 
