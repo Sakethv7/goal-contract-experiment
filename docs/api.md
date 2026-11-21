@@ -713,3 +713,28 @@ Caption: S8 is a new scenario name with one new prompt. It reuses `truth-s7.json
 ## Open questions (Part 8)
 
 39. **Truth file.** S8 reuses `truth-s7.json`. The fixture check stays the same.
+
+
+# Part 9: S8b
+
+## Visual Level
+
+```mermaid
+flowchart TD
+    A[PROMPTS continue8b and SCENARIOS S8b] --> B[run_experiment.py runs the S8 flow]
+    B --> C[s7_scores and score.py count scenario S8b]
+    C --> D[Result rows, scenario S8b]
+
+    classDef new fill:#cfe3ff,stroke:#2a62b8,color:#10264d
+    class A,B,C,D new
+```
+
+Caption: S8b is a new scenario name with one new prompt. It reuses `truth-s7.json`, the arms, the hooks and the scorer.
+
+## Contract 32: S8b additions
+
+- `PROMPTS["continue8b"]` is "Continue the work in this repo. The owner's change to rule (2) is now in force."
+- `SCENARIOS["S8b"]` is the S8 list with `continue8b` as session 3.
+- `--scenario S8b` runs alone, with arms A, N, T and F, like S7 and S8.
+- `score.py` prints stale counts per scenario for S7, S8 and S8b.
+- Invariant: `continue8b` never states the new sort.

@@ -133,6 +133,8 @@ PROMPTS["change8"] = (
 SCENARIOS["S8"] = [{"prompt": "goal4", "max_turns": 14, "resume": False, "after": "baseline"},
                    {"prompt": "change8", "max_turns": 10, "resume": False, "after": "revert"},
                    {"prompt": "continue", "max_turns": None, "resume": False}]
+PROMPTS["continue8b"] = "Continue the work in this repo. The owner's change to rule (2) is now in force."
+SCENARIOS["S8b"] = SCENARIOS["S8"][:2] + [{"prompt": "continue8b", "max_turns": None, "resume": False}]
 for _sc in REAL_SCENARIOS:  # the task text lives in fixtures/real/rag_mini/tasks.json, filled in by load_real_tasks
     SCENARIOS[_sc] = [{"prompt": _sc, "max_turns": 3, "resume": False},
                       {"prompt": "continue", "max_turns": None, "resume": False}]
@@ -758,7 +760,7 @@ def run_one(arm: str, scenario: str, n: int, a: argparse.Namespace, truth: dict)
             rec["allowed_files"] = truth["allowed_files"]
         else:
             workdir, start = make_workdir(arm, tmp / "w", truth, a.full_spec, s4=scenario == "S4", s5=scenario == "S5",
-                                          s7=scenario in ("S7", "S8"))
+                                          s7=scenario in ("S7", "S8", "S8b"))
         settings = out / "settings.json"
         settings.write_text(json.dumps(build_settings_p1(arm, out / "compaction-log") if scenario == "P1"
                                        else build_settings(arm), indent=2))
@@ -781,7 +783,7 @@ def run_one(arm: str, scenario: str, n: int, a: argparse.Namespace, truth: dict)
         (out / "diff.patch").write_text(patch)
         if scenario in REAL_SCENARIOS:
             rec.update(real_scores(workdir, truth))
-        elif scenario in ("S7", "S8"):
+        elif scenario in ("S7", "S8", "S8b"):
             rec.update(s7_scores(workdir, truth, arm, out))
         elif scenario in ("S4", "S5"):
             rules = (s4_rules if scenario == "S4" else s5_rules)(workdir)
@@ -838,15 +840,15 @@ def parse_args(argv=None) -> argparse.Namespace:
                    help="ADR-8 follow-up: GOAL.md holds the full task text instead of the short goal")
     a = p.parse_args(argv)
     try:
-        a.arms, a.scenarios = (["A", "B", "C"] if a.arm == "all" else pick(a.arm, ["A", "B", "C", "N", "M", "K", "T", "F"])), pick(a.scenario, ["S1", "S2", "S3", "S4", "S5", "S7", "S8", "R1", "R2", "P1"])
+        a.arms, a.scenarios = (["A", "B", "C"] if a.arm == "all" else pick(a.arm, ["A", "B", "C", "N", "M", "K", "T", "F"])), pick(a.scenario, ["S1", "S2", "S3", "S4", "S5", "S7", "S8", "S8b", "R1", "R2", "P1"])
     except argparse.ArgumentTypeError as e:
         p.error(str(e))
     if "M" in a.arms and not set(a.scenarios) <= {"S4", "S5"}:
         p.error("arm M runs in scenarios S4 and S5 only")
-    if set(a.arms) & {"T", "F"} and a.scenarios not in (["S7"], ["S8"]):
-        p.error("arms T and F run in scenarios S7 and S8 only")
-    if set(a.scenarios) & {"S7", "S8"} and (len(a.scenarios) != 1 or not set(a.arms) <= {"A", "N", "T", "F"}):
-        p.error("scenarios S7 and S8 run alone, with arms A, N, T and F")
+    if set(a.arms) & {"T", "F"} and a.scenarios not in (["S7"], ["S8"], ["S8b"]):
+        p.error("arms T and F run in scenarios S7, S8 and S8b only")
+    if set(a.scenarios) & {"S7", "S8", "S8b"} and (len(a.scenarios) != 1 or not set(a.arms) <= {"A", "N", "T", "F"}):
+        p.error("scenarios S7, S8 and S8b run alone, with arms A, N, T and F")
     if "P1" in a.scenarios:
         if a.scenarios != ["P1"] or not set(a.arms) <= {"A", "K", "C"}:
             p.error("scenario P1 runs alone, with arms A, K and C")
@@ -870,7 +872,7 @@ def main(argv=None) -> int:
     truths = {sc: json.loads((FIXTURE / "truth.json").read_text()) for sc in ("S1", "S2", "S3")}
     truths["S4"] = json.loads((S4_DIR / "truth-s4.json").read_text())
     truths["S5"] = json.loads((S5_DIR / "truth-s5.json").read_text())
-    truths["S7"] = truths["S8"] = json.loads((S7_DIR / "truth-s7.json").read_text())
+    truths["S7"] = truths["S8"] = truths["S8b"] = json.loads((S7_DIR / "truth-s7.json").read_text())
     truths["P1"] = {}
     real_cfg = load_real_tasks() if set(a.scenarios) & set(REAL_SCENARIOS) else None
     if real_cfg:
@@ -887,7 +889,7 @@ def main(argv=None) -> int:
             check_fixture_real(real_cfg, [sc for sc in a.scenarios if sc in REAL_SCENARIOS])
         if "S4" in a.scenarios:
             check_fixture_s4()
-        if set(a.scenarios) & {"S7", "S8"}:
+        if set(a.scenarios) & {"S7", "S8", "S8b"}:
             check_fixture_s7()
     except FixtureBroken as e:
         print(f"fixture broken: {e}", file=sys.stderr)

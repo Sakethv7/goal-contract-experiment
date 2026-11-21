@@ -577,3 +577,33 @@ Path 20 failure table applies. One new case: the agent applies the new sort in s
 ## Open questions (Part 8)
 
 38. **How often does the agent apply the sort in session 2?** A high rate in arm A means the prompt leaks. The screen catches this through P3a.
+
+
+# Part 9: S8b
+
+## Visual Level
+
+```mermaid
+flowchart TD
+    A[Session 1: build export and CLI, cap 14] --> B{Both steps built?}
+    B -- no --> X[Invalid run. Replace it]
+    B -- yes --> C[Session 2: owner says r2 changes later. Agent adds tests]
+    C --> D[Harness reverts the CLI file]
+    D --> E[Session 3: Continue. The change is now in force]
+    E --> F{New sort in final code?}
+    F -- no --> G[Stale run]
+    F -- yes --> H[Fresh run]
+
+    classDef old fill:#e5e5e5,stroke:#777,color:#222
+    classDef new fill:#cfe3ff,stroke:#2a62b8,color:#10264d
+    classDef fail fill:#ffd6d6,stroke:#b82a2a,color:#4d1010
+    class A,B,C,D,F,H old
+    class E new
+    class X,G fail
+```
+
+Caption: Grey is Path 24, which exists today. Blue is the one new step: the session 3 prompt.
+
+## Path 25: S8b trial
+
+Path 24 applies. Only session 3 differs. Its prompt is: "Continue the work in this repo. The owner's change to rule (2) is now in force." Scoring and failure behavior follow Path 24.

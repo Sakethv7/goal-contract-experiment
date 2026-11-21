@@ -250,7 +250,7 @@ def main(argv=None) -> int:
         d, lo, hi = mean_difference(vals["M"], vals["C"])
         if d is not None:
             print(f"mean M7 of M minus C = {d:.2f}, 95% bootstrap interval over runs [{lo:.2f}, {hi:.2f}]")
-    for sc in ("S7", "S8"):
+    for sc in ("S7", "S8", "S8b"):
         counts = stale_counts(rows, sc)
         if counts:
             print(f"{sc} stale runs per arm: " + ", ".join(f"{a} {s} of {n}" for a, (s, n) in counts.items()))

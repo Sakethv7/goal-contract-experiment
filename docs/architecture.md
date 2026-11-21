@@ -793,3 +793,65 @@ Screen: arm A, 3 valid runs, 3 stale. P3a passed. Main batch: 27 valid runs, $2.
 
 36. **Answered (2026-11-21): no, in 16 of 16 runs.** The question was: will agents in T and F apply a rule that the owner said to apply later? The log says "newest human instruction wins". The prompt in session 3 is only "Continue". An agent may wait for a go-ahead. That would show as a stale run for T and F too. It is a result.
 37. **Witness date.** Still open.
+
+
+# Part 9: Same test as S8, with an unambiguous session 3 prompt (S8b)
+
+Status: PRE-REGISTERED 2026-11-21, before any S8b run. RUN 2026-11-21. Results are in "What S8b showed" below. Related decision: ADR-28.
+
+## Visual Level
+
+```mermaid
+flowchart TD
+    A[S8 result: T and F agents knew the change and waited] --> B[S8b: same three sessions as S8]
+    B --> C[Session 3 prompt adds: the owner's change to rule 2 is now in force]
+    C --> D{Does the final code use the new sort?}
+    D -- yes --> E[Fresh run. Memory carried the change]
+    D -- no --> F[Stale run. The change was forgotten]
+    B --> G{Session 1 built both parts?}
+    G -- no --> H[Invalid run. Replace it]
+
+    classDef old fill:#e5e5e5,stroke:#777,color:#222
+    classDef new fill:#cfe3ff,stroke:#2a62b8,color:#10264d
+    classDef fail fill:#ffd6d6,stroke:#b82a2a,color:#4d1010
+    class A,B,G old
+    class C,D,E new
+    class F,H fail
+```
+
+Caption: Grey is S8, which exists today. Blue is new in S8b. Red is a stale or invalid run. The only change is box C. The session 3 prompt says the change is in force but does not say what it is, so only memory can carry the new rule.
+
+## What S8b changes
+
+One sentence in the session 3 prompt. S8 used "Continue the work in this repo." S8b uses "Continue the work in this repo. The owner's change to rule (2) is now in force." Sessions 1 and 2, the fixture, arms A, N, T and F, the revert event, the hidden tests and the scoring are the same as S8. In S8, agents in arms T and F saw the change and kept the old sort because the wording said "next session". S8b removes that ambiguity. A stale run now means the agent did not apply the new sort. The prompt does not state the new sort, so arm A cannot know it.
+
+Tier: **single-process tool**. One prompt and one scenario entry.
+
+## Pre-registered thresholds
+
+I write these before any S8b run and change none after the first run. I report counts only. S8 results stay as they are.
+
+| Id | Claim | Falsified if |
+| --- | --- | --- |
+| P4a | Floor. Arm A cannot recover the change. 3 valid runs, at least 2 stale. | 0 or 1 of 3. The prompt leaks the rule. I report it and stop. |
+| P4b | Management reduces staleness. T has at least 4 fewer stale runs than N (of 8). | The gap is 3 or less. I report no gain. |
+| P4c | The tree shape matters. T has at least 3 fewer stale runs than F. | The gap is 2 or less. |
+| P4d | Cost. T mean cost per valid run is at most 1.5 times N. | Above that, cost is a finding. |
+
+## Cost
+
+Same as S8. 27 valid runs cost $2.04 there. Cap: $3.00.
+
+## Tradeoffs made
+
+- The prompt was changed after I saw S8. S8b is a new scenario with its own thresholds, and S8 is reported unchanged. The readers can discount S8b for that.
+- "Is now in force" tells the agent a change exists. Arm A can try to guess it, so P4a guards the floor.
+- One rule, one change, Haiku, one fixture.
+
+## What S8b showed
+
+Main batch: 27 valid runs, $2.21. Stale runs: A 3 of 3, N 0 of 8, T 0 of 8, F 1 of 8. Mean cost per valid run: A $0.059, N $0.072, T $0.080, F $0.088. P4a passed. P4b failed (gap 0). P4c failed (gap 1). P4d passed (1.1 times N). Reading: with a clear prompt, any memory carried the change, and the tree added nothing over a plain notes file. I did not read the one stale F run.
+
+## Open questions (Part 9)
+
+40. **Answered: yes in the one N run I read.** The question was: will agents in arm N write the change into NOTES.md at session 2?** In S8, 4 of 8 did something that led to the new sort. That rate may rise or stay.

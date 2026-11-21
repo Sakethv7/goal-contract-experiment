@@ -1116,3 +1116,42 @@ Caption: Grey is the S7 result. Blue is the new flow. Red is a stop. Level 3 exp
 **Consequences.** One new prompt (`change8`), one scenario entry (`S8`), session 1 cap of 14. Scoring and the audit stay the same. The floor check P3a guards against a repeat of S7.
 
 **What we gave up.** S8 tests the prompt log more than the tree. A tie between T and F is the likely result for the tree. "Switch later" is a setup that real work only sometimes has. If S8 also ends with no gap between T and N, the answer to your question for this size is that notes and the repo are enough, and a tree adds cost with no gain.
+
+
+## ADR-28: Rerun S8 with an unambiguous session 3 prompt (S8b)
+
+### Visual Level
+
+```mermaid
+flowchart TD
+    A[S8: T and F 8 of 8 stale, agents waited on next session] --> B{Can the stale score tell forgetting from waiting?}
+    B -- no --> C[New scenario S8b: session 3 says the change is in force]
+    C --> D[Write thresholds P4a to P4d first]
+    D --> E[Run A 3, N 8, T 8, F 8]
+    E --> F{Arm A at least 2 of 3 stale?}
+    F -- no --> G[Stop. The prompt leaks the rule]
+    F -- yes --> H[Compare T with N and F]
+
+    classDef old fill:#e5e5e5,stroke:#777,color:#222
+    classDef new fill:#cfe3ff,stroke:#2a62b8,color:#10264d
+    classDef fail fill:#ffd6d6,stroke:#b82a2a,color:#4d1010
+    class A old
+    class B,C,D,E,F,H new
+    class G fail
+```
+
+Caption: Grey is the S8 result. Blue is the new flow. Red is a stop. Level 3 explainer: skipped. The change from S8 is one sentence in one prompt, and level 2 shows every step and the one failure path.
+
+**Context.** S8 gave T and F 8 of 8 stale runs and N 4 of 8. I read 3 runs. The T and F agents knew the change and waited for "the next session". The stale score cannot tell waiting from forgetting.
+
+**Options.**
+1. Report S8 as it is. The headline is misleading, but no new run is needed.
+2. Fix the prompt in S8 and replace its results. This hides the first result.
+3. Add S8b with its own thresholds and report both (this ADR).
+4. Change the score to read the final message for "deferred". This is subjective and a rough filter.
+
+**Choice.** Option 3. S8 stays as run. S8b changes one sentence and has thresholds written first.
+
+**Consequences.** One new prompt (`continue8b`), one scenario entry (`S8b`), no scoring change. The write-up reports S8 and S8b side by side.
+
+**What we gave up.** I changed the prompt after seeing the result, which is a degree of freedom. I accept it and say so. The sentence tells the agent that a change exists, so arm A may guess. P4a checks that.

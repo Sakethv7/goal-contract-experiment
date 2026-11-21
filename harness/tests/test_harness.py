@@ -399,6 +399,15 @@ class S7Test(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 rx.parse_args([*bad, *base])
 
+    def test_s8b_differs_from_s8_only_in_session_3(self):
+        self.assertEqual(rx.SCENARIOS["S8b"][:2], rx.SCENARIOS["S8"][:2])
+        self.assertEqual(rx.SCENARIOS["S8b"][2]["prompt"], "continue8b")
+        self.assertIn("now in force", rx.PROMPTS["continue8b"])
+        self.assertNotIn("largest", rx.PROMPTS["continue8b"])
+        base = ["--model", "m", "--max-cost", "1", "--out", tempfile.gettempdir()]
+        a = rx.parse_args(["--arm", "A,N,T,F", "--scenario", "S8b", *base])
+        self.assertEqual(a.scenarios, ["S8b"])
+
     def test_stale_counts_per_scenario(self):
         import score
         rows = [{"arm": "A", "scenario": "S8", "valid": True, "stale_run": 1},

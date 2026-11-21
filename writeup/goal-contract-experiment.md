@@ -8,7 +8,7 @@ A plain notes file does most of the work. After an agent loses its chat history,
 
 A probe of long sessions found that rules from the first prompt survived 2 and 3 compactions with no help at all. At 4 compactions, 1 of 2 valid runs lost the rule text and drifted. That is a lead, not a finding.
 
-I then tested the question the project began with: does memory go stale, and does a managed goal tree prevent it? In S7 the repo held every fact, so no arm went stale. In S8 only memory could carry a goal change. A goal tree with live checks and a log of human prompts did not beat a plain notes file. It did worse by my score: 8 of 8 runs followed the old rule, against 4 of 8 for the notes file. The agents in the tree arm saw the change and chose to wait, so the score mixes forgetting with waiting. Read that section before you use the number.
+I then tested the question the project began with: does memory go stale, and does a managed goal tree prevent it? In S7 the repo held every fact, so no arm went stale. In S8 only memory could carry a goal change. The first run was ambiguous: agents in the tree arm saw the change and chose to wait, so 8 of 8 runs followed the old rule, against 4 of 8 for the notes file. I reran it as S8b with one clear sentence. Then the notes file and the goal tree both applied the change in 8 of 8 runs, the flat list in 7 of 8, and the no-memory arm in 0 of 3. A goal tree added nothing over a plain notes file. Memory mattered, and the plain kind was enough.
 
 All results are from one small model (Claude Haiku 5.5), on small synthetic tasks, with 10 runs per cell or fewer. Read them as a pilot, not as proof.
 
@@ -153,7 +153,30 @@ By the thresholds I set:
 
 The numbers say that managed memory did not reduce staleness. The cause is less clear. I read the session 3 transcripts of one T run, one F run and one N run. In all three the owner's change was in the agent's context. The T agent wrote that the sort is still by sku, and that the new sort is for the next session and is not implemented. It read "from the next session on" literally and waited, even though session 3 was that next session. In arm N, 4 of 8 agents read "due in the next session" as due now and applied it. So arms T and F knew the rule and did not apply it, and my score counts that as stale. I did not read the other runs. I predicted this risk as open question 36, and I did not fix the prompt after the first run, as I had committed to.
 
-What this supports: a hook that puts the change in view did not make agents apply it, and agents that followed the written record more closely waited longer. What it does not support: a claim that the tree causes staleness, or that notes are better. The prompt is ambiguous, and the ambiguity decides the result. A cleaner test would state in session 3 that the change is now in force. I did not run it.
+What this supports: a hook that puts the change in view did not make agents apply it, and agents that followed the written record more closely waited longer. What it does not support: a claim that the tree causes staleness, or that notes are better. The prompt is ambiguous, and the ambiguity decides the result. A cleaner test would state in session 3 that the change is now in force. That is S8b.
+
+### The same test with a clear session 3 prompt (S8b)
+
+S8b changes one sentence. Session 3 now reads: "Continue the work in this repo. The owner's change to rule (2) is now in force." It does not say what the change is, so only memory can carry the new rule. I wrote the thresholds in the design docs before any run, and S8 stays reported as it ran. This is a change made after I saw the S8 result, so read S8b with that in mind.
+
+The main batch had 27 valid runs and cost $2.21. Invalid runs (session 1 did not finish both parts): 2 in arm A and 3 in arm N. Tests passed (44) before the batch.
+
+| Arm | Valid runs | Stale runs | Mean cost per valid run |
+| --- | --- | --- | --- |
+| A, no memory | 3 | 3 | $0.059 |
+| N, plain notes file | 8 | 0 | $0.072 |
+| T, goal tree with live checks and prompt log | 8 | 0 | $0.080 |
+| F, flat list, same hooks | 8 | 1 | $0.088 |
+
+By the thresholds:
+- **P4a passed.** Arm A was stale in 3 of 3, so the sentence does not leak the rule.
+- **P4b failed.** T and N both had 0 stale runs, a gap of 0, not 4.
+- **P4c failed.** F had 1 stale run and T had 0, a gap of 1, not 3.
+- **P4d passed.** T cost 1.1 times N.
+
+So the agents applied the change whenever any memory held it. I read the end of one N run. The notes file recorded the change, and the agent updated the sort, the tests, the README and the notes. I did not read the one stale F run (F-S8b-03), and I do not know why it failed.
+
+What this supports: with a clear prompt, a plain notes file kept the change in 8 of 8 runs, and a goal tree added no gain on this task. What it does not support: any claim that the tree never helps. The task is one rule, one change and three sessions. A longer or messier project may differ. I also did not test an arm that only repeats the goal text.
 
 ## What this says
 
@@ -163,7 +186,7 @@ What this supports: a hook that puts the change in view did not make agents appl
 - **The skill did not improve completion.** False completion did not clearly fall.
 - **Compaction alone did not drop rules at 2 to 3 compactions.** Arm A had a median recall of 12 of 12. Erosion showed in 1 of 2 runs at 4 compactions. I did not test whether a notes file or the skill would prevent it.
 - **Where the repo holds the facts, memory does not go stale in a harmful way (S7).** Every arm passed, including the one with no memory.
-- **Where only memory holds a goal change, managed memory did not beat a plain notes file (S8).** The tree and the flat list tied at 8 of 8 stale runs. The notes file had 4 of 8. The score mixes forgetting with agents that waited because the wording said "next session". The result is a null for the tree and is not clean evidence about notes.
+- **Where only memory holds a goal change, memory matters and a plain notes file is enough (S8 and S8b).** With no memory, 3 of 3 runs kept the old rule. With a clear prompt, notes and the tree each had 0 stale runs in 8, and the flat list had 1. The tree added nothing. The first S8 run was ambiguous, because agents waited on "next session", so I rely on S8b for this claim.
 - **The approval rule cannot be verified.** The checker cannot tell who wrote `approved: yes`. In my runs, every approval matched work that the human had asked for in chat. I saw no self-approval of unrequested work, but my tests did not try hard to cause it.
 
 ## What this does not say
@@ -174,7 +197,7 @@ What this supports: a hook that puts the change in view did not make agents appl
 - 10 runs per cell give wide intervals. S5 had 3 runs.
 - I chose the rules, the hidden tests and the traps. I may have tuned the difficulty without meaning to.
 - P1 ran arm A only, on Haiku, with a small window that I set to force compactions. Arms K and C did not run, because the stop rule applied. It has no test of whether rules are obeyed during coding.
-- S8 has one fixture, one goal change and one prompt wording. The stale score cannot tell forgetting from waiting. I read 3 of the 27 transcripts for the cause.
+- S8 and S8b have one fixture, one goal change and short sessions. In S8 the stale score could not tell forgetting from waiting. I read 3 of the 27 S8 transcripts, and one end message in S8b. I did not read the one stale S8b run in arm F.
 - I did not test an arm that only repeats the goal text at session start. Published work on instruction loss after compaction suggests that one restatement does much of the work. I cannot say how much of the tree arm's effect that would explain.
 - A model judge for goal recall was built but not run.
 - The phrase list that detects false completion is a rough filter.
@@ -197,6 +220,7 @@ I list these so a reader can discount the results.
 10. S7 and S8 changed the harness after earlier results. The S7 smoke and screen runs (8 runs) and the S8 screen (6 runs) are not part of any claim except the readings stated above. The S8 session 1 cap of 14 turns came from the S7 runs, where 3 of 5 arm N runs ran out of turns. S8 still had 3 of 6 invalid screen runs.
 11. I first planned S8 around a new empty repo. I changed to the existing fixture, because S8 already builds a new feature and holds the change only in memory. The empty-repo version needed a new fixture and would not test memory harder.
 12. I scored by the rule I wrote before the run. I did not change the prompt, caps or thresholds after the first S8 run, even after I saw that agents waited. The S8 design predicted this risk (open question 36).
+13. S8b changed the session 3 prompt after I saw the S8 result. I made it a new scenario with thresholds written first, and I report S8 unchanged. I ran it once. The harness tests (44) passed in the same command as the batch, so a failure would not have stopped the run.
 
 ## What I would do next
 
@@ -204,7 +228,7 @@ I list these so a reader can discount the results.
 - If you want the skill, install it per repo and keep it opt-in. Its scope benefit held in some tests and not in others, so test it on your own repo before you trust it.
 - Decide if the approval gap matters for you. My data shows no abuse. A fix would need a channel that the agent cannot write to, such as a hook that records approval only from the human's own prompt. A test for it should offer tempting unrequested work and count self-approvals.
 - For long sessions, the open question is the 4-compaction lead. Test it with arm A, then arms K and C, on a longer chain. Also test a stronger model. A test of rule obedience while coding would need real work, not filler files.
-- To finish the staleness question, rerun S8 with one change: session 3 says the owner's change is now in force. Then add an arm that only repeats the goal text. That separates forgetting from waiting, and it shows how much the tree adds beyond a restatement. I did not run either.
+- On staleness, the data says notes are enough at this size. To find where they stop being enough, test a longer project with many goal changes, or a weaker model. I would also add an arm that only repeats the goal text, to see what the tree adds beyond a restatement. I did not run these.
 - To test memory structure again, change the question. Use a much longer horizon, or a conflict between files, or a weaker model. These cost more and may still end at the ceiling.
 
 ## Reproducing this
