@@ -1155,3 +1155,244 @@ Caption: Grey is the S8 result. Blue is the new flow. Red is a stop. Level 3 exp
 **Consequences.** One new prompt (`continue8b`), one scenario entry (`S8b`), no scoring change. The write-up reports S8 and S8b side by side.
 
 **What we gave up.** I changed the prompt after seeing the result, which is a degree of freedom. I accept it and say so. The sentence tells the agent that a change exists, so arm A may guess. P4a checks that.
+
+
+# Part 10: Horizon sweep (S9)
+
+One explainer covers ADR-29 to ADR-33: [adr-29-33-horizon-sweep.html](visuals/adr-29-33-horizon-sweep.html).
+
+## ADR-29: Replace one-scenario batches with one horizon sweep
+
+### Visual Level
+
+```mermaid
+flowchart TD
+    A[Today: one scenario, one level, one batch] --> B{Did memory arms hit the ceiling?}
+    B -- yes --> C[No arm can beat notes. Build a new scenario]
+    C --> A
+    B -- no --> D[Report the gap]
+    E[New: one task family at K = 1, 3 and 6] --> F[One batch, all levels mixed]
+    F --> G{Do the arm curves split as K grows?}
+    G -- yes --> H[Report where they split and by how much]
+    G -- no --> I[Report no split over the range, with intervals]
+
+    classDef old fill:#e5e5e5,stroke:#777,color:#222
+    classDef new fill:#cfe3ff,stroke:#2a62b8,color:#10264d
+    classDef fail fill:#ffd6d6,stroke:#b82a2a,color:#4d1010
+    class A,B,D old
+    class E,F,G,H,I new
+    class C fail
+```
+
+Caption: Grey is the loop of Parts 1 to 9. Red is the costly path: a ceiling sends us back to build a new scenario. Blue is the sweep. Level 3 explainer: [adr-29-33-horizon-sweep.html](visuals/adr-29-33-horizon-sweep.html).
+
+**Context.** Parts 1 to 9 ran eleven scenarios and more than nine batches. Most ended at a ceiling. Each ceiling or design flaw led to a new scenario and a new batch. The question of whether structure helps was never tested at a level where plain notes fail.
+
+**Options.**
+1. Build the greenfield S9 from `NEXT_STEPS.md`. It is one more single-level scenario.
+2. Run S8b again at larger n. It is still at the ceiling, so n does not help.
+3. One task family with a difficulty knob, run at several levels in one batch (this ADR).
+
+**Choice.** Option 3. The knob is K, the number of owner decisions. The levels are 1, 3 and 6. The pilot may move them (open question 41).
+
+**Consequences.** One fixture with six decisions and six small tasks. One batch. One chart: decision score against K, one line per arm. The greenfield S9 and the arm R plan are dropped.
+
+**What we gave up.** Depth on any single scenario. The greenfield case, where the repo starts empty, is not tested. A sweep also needs a larger fixture up front, so the first build costs more than one more scenario would.
+
+## ADR-30: Start every run from a fixed checkpoint
+
+### Visual Level
+
+```mermaid
+flowchart TD
+    A[Today: session 1 asks the agent to build the export] --> B{Did session 1 build both parts?}
+    B -- no --> C[Invalid run. Pay for it and replace it]
+    B -- yes --> D[Memory test starts from a state that differs per run]
+    E[New: copy the S4 reference solution and commit it] --> F[Check that all six rules pass]
+    F --> G{Do they all pass?}
+    G -- no --> H[Fixture broken. Stop before any run]
+    G -- yes --> I[Every run starts the memory test from the same state]
+
+    classDef old fill:#e5e5e5,stroke:#777,color:#222
+    classDef new fill:#cfe3ff,stroke:#2a62b8,color:#10264d
+    classDef fail fill:#ffd6d6,stroke:#b82a2a,color:#4d1010
+    class A,B,D old
+    class E,F,G,I new
+    class C,H fail
+```
+
+Caption: Grey is the S7 to S8b flow. Blue is the checkpoint. Red is a lost run or a broken fixture. Level 3 explainer: see the top of Part 10.
+
+**Context.** In S8 and S8b, 3 to 5 runs per batch were invalid because session 1 did not finish. Those runs cost money and told us nothing. The valid runs also started the memory test from different code, which adds noise that has nothing to do with memory.
+
+**Options.**
+1. Keep session 1 and raise its turn cap again.
+2. Start from the S4 reference solution, committed as the first state (this ADR).
+3. Let one agent build session 1 once, then fork that state for every run.
+
+**Choice.** Option 2. The reference solution exists and passes the hidden tests. Option 3 would tie every run to one agent's code, with its quirks.
+
+**Consequences.** No session-1 invalid runs. Every arm starts from the same bytes, so arm gaps are not driven by build luck. Cost per run falls by one session.
+
+**What we gave up.** The sweep does not test memory while the agent builds a feature from nothing. The agent did not write the checkpoint code, so it may read it with less context than its own code. That is the same for every arm.
+
+## ADR-31: Run four nested arms, A, L, N and T
+
+### Visual Level
+
+```mermaid
+flowchart TD
+    A[Arm A: no memory] --> B[Arm L: harness logs every human prompt and prints it at start]
+    B --> C[Arm T: L plus a goal tree with live checks]
+    D[Arm N: agent keeps NOTES.md]
+    B --> E{Does L beat N at K = 6?}
+    D --> E
+    E -- yes --> F[Memory the agent cannot erase helps]
+    E -- no --> G[Who writes the memory does not matter here]
+    C --> H{Does T beat L at K = 6?}
+    H -- yes --> I[The tree adds value beyond the log]
+    H -- no --> J[The tree adds cost, no gain]
+
+    classDef old fill:#e5e5e5,stroke:#777,color:#222
+    classDef new fill:#cfe3ff,stroke:#2a62b8,color:#10264d
+    classDef fail fill:#ffd6d6,stroke:#b82a2a,color:#4d1010
+    class A,C,D old
+    class B,E,F,H,I new
+    class G,J fail
+```
+
+Caption: Grey arms exist today (A, N and T from S7). Blue is new: arm L and the two contrasts. Red marks the negative readings, which are still results. Level 3 explainer: see the top of Part 10.
+
+**Context.** Arm T in S7 to S8b bundled four things: a tree, live checks, a stop gate and a prompt log. A gain or a loss could not be traced to one of them. Your claim is that the agent erases its own memory and that the tree prevents it. To test that, one arm must hold memory that the agent cannot erase, with no tree.
+
+**Options.**
+1. Keep A, N, T and F as in S8b.
+2. A full factorial: who writes the memory (nobody, agent, harness) times shape (flat, tree) times checks (off, on). That is 12 cells per level.
+3. Four nested arms: A, L, N, T (this ADR).
+
+**Choice.** Option 3. L is the prompt log alone, written by a hook. T is L plus the tree and the checks. N is agent-written. Each contrast changes one thing. The log for L and T is stored outside the workdir, so agent edits have no effect.
+
+**Consequences.** Two new hook flags (Contract 34). Arm T changes in one way from S8b: its log moves outside the workdir. That makes T and L share the same log. Arms B, C, M and F do not run.
+
+**What we gave up.** Arm F, so a T gain cannot be split into tree shape and live checks. S8 and S8b showed no T and F gap, so I accept this. The factorial would answer more, but at 3 times the cost. The block-mode scope effect from S1 to S4 is not re-tested.
+
+## ADR-32: Score with graded measures, failure types and intervals
+
+### Visual Level
+
+```mermaid
+flowchart TD
+    A[Final repo of a run] --> B[Hidden tests score each changed rule]
+    B --> C{Is the rule in its right final state?}
+    C -- yes --> D[Count it as new]
+    C -- no --> E{Does an older decision show?}
+    E -- yes --> F[Count it as stale]
+    E -- no --> G{Does the base rule show?}
+    G -- yes --> H[Count it as forgotten]
+    G -- no --> I[Count it as other]
+    D --> J[Decision score, bootstrap intervals, Fisher test, one chart]
+    F --> J
+    H --> J
+    I --> J
+
+    classDef old fill:#e5e5e5,stroke:#777,color:#222
+    classDef new fill:#cfe3ff,stroke:#2a62b8,color:#10264d
+    classDef fail fill:#ffd6d6,stroke:#b82a2a,color:#4d1010
+    class A,B old
+    class C,D,E,G,J new
+    class F,H,I fail
+```
+
+Caption: Grey exists today: hidden tests on the final repo. Blue is new scoring. Red marks the three failure types. Level 3 explainer: see the top of Part 10.
+
+**Context.** Parts 1 to 9 scored pass or fail per run and reported counts only. The write-up said 10 runs cannot support an interval. That is not true. An interval can be computed. It is wide, and showing that is honest. Pass or fail also throws away signal: a run that applies 3 of 4 decisions counts the same as one that applies none. The P1 keyword filter gave a wrong score once.
+
+**Options.**
+1. Keep counts and keyword filters.
+2. Graded decision score and failure types from hidden tests, with bootstrap intervals (this ADR).
+3. Option 2 plus a model judge that labels each memory snapshot for erasure, checked against hand labels.
+
+**Choice.** Option 2. The first draft chose option 3. Published work changed that (see "Prior work" in `architecture.md`). Memory systems fail most on updates, where a newer fact must replace an older one. The hidden tests can tell a stale rule from a forgotten one, so the main question needs no judge. Bootstrap uses 10,000 resamples with a fixed seed. The all-correct rate gets a Wilson interval and a Fisher exact test. Memory snapshots are still saved, and I read the snapshots of failed runs by hand.
+
+**Consequences.** One new script, `sweep_report.py`, standard library only. matplotlib is not installed, so the chart is a hand-built SVG. Each changed rule needs one hidden test per state it can be in (Contract 33).
+
+**What we gave up.** A count of erasure inside the memory file. If an agent erases a decision from `NOTES.md` and then applies it from the code or by luck, the score does not see it. Hand reading gives causes but no number. The bootstrap interval is rough at n = 8 and can be too narrow. I state that in the write-up.
+
+## ADR-33: Pilot, then freeze thresholds, then one mixed parallel batch
+
+### Visual Level
+
+```mermaid
+flowchart TD
+    A[Pilot: one run per arm at the top level] --> B[Read every pilot transcript]
+    B --> C{Hooks fired, no leaks, arm N below the ceiling?}
+    C -- no --> D[Change the design only: prompts, caps or K values]
+    D --> A
+    C -- yes --> E[Freeze thresholds Q0 and H1 to H5]
+    E --> F[Shuffle all main runs with a fixed seed]
+    F --> G[Run 4 at a time]
+    G --> H{Total cost at the cap?}
+    H -- yes --> I[Stop. Report the runs that finished]
+    H -- no --> J[Score and report]
+
+    classDef new fill:#cfe3ff,stroke:#2a62b8,color:#10264d
+    classDef fail fill:#ffd6d6,stroke:#b82a2a,color:#4d1010
+    class A,B,C,E,F,G,H,J new
+    class D,I fail
+```
+
+Caption: All boxes are new. Red boxes are a loop back to the design or an early stop. Level 3 explainer: see the top of Part 10.
+
+**Context.** S7 and S8 each failed for a design reason that one cheap run would have shown. S7 leaked the facts into the repo. S8 had an ambiguous prompt. Both were found only after thresholds were written and a batch was paid for. Batches also ran one cell after another, so time effects, such as a model update, could fall on one arm.
+
+**Options.**
+1. Keep smoke, screen and main as separate stages per scenario.
+2. Pilot first, then freeze thresholds, then one batch with all cells mixed in random order and run in parallel (this ADR).
+3. Skip the pilot and rely on stop rules.
+
+**Choice.** Option 2. The pilot may change the design. It may not change a threshold. Pilot runs are excluded from every claim. The main batch is shuffled with seed 9 and runs 4 jobs at once.
+
+**Consequences.** New flags `--jobs` and `--order-seed`. The cost cap is checked before each run starts, so the batch may pass it by up to 4 runs. Wall time falls from about 8 hours to about 2.
+
+**What we gave up.** The pilot tempts me to tune the design toward a favored arm. The rule that thresholds stay fixed is the guard, and I list every pilot change in the write-up. Parallel runs can hit rate limits. A rate-limit error makes the run invalid and it is replaced, which costs money.
+
+
+## ADR-34: Add a quiz and neighbor tests to split forgetting from drift
+
+### Visual Level
+
+```mermaid
+flowchart TD
+    A[Release session ends] --> B[Resume once: multiple-choice quiz, no tools]
+    B --> C[Hidden tests on rules, neighbors and unrelated rules]
+    C --> D{Is the changed rule right in the code?}
+    D -- yes --> E[Count it as done]
+    D -- no --> F{Was the quiz answer right?}
+    F -- yes --> G[Knows-but-violates: drift in action]
+    F -- no --> H[Did not know: forgetting]
+    C --> I{Did a neighbor or an unrelated rule change?}
+    I -- yes --> J[Spillover or unrelated loss]
+    I -- no --> K[No drift outside scope]
+
+    classDef old fill:#e5e5e5,stroke:#777,color:#222
+    classDef new fill:#cfe3ff,stroke:#2a62b8,color:#10264d
+    classDef fail fill:#ffd6d6,stroke:#b82a2a,color:#4d1010
+    class A,E,K old
+    class B,C,D,F,I new
+    class G,H,J fail
+```
+
+Caption: Grey exists in Part 10 before this ADR. Blue is new. Red marks the three kinds of failure this ADR can tell apart. Level 3 explainer: [adr-29-33-horizon-sweep.html](visuals/adr-29-33-horizon-sweep.html), which also covers this ADR.
+
+**Context.** You proposed a second cause of drift. A new decision takes priority over old goals, so the agent drifts toward it, into related code and away from unrelated goals. It drifts even though it still knows the old goals if asked. The Part 10 score cannot see this. A wrong rule looks the same whether the agent forgot it or knew it and did not act. A change in a related place is not checked at all. Published work names the first pattern "knows-but-violates".
+
+**Options.**
+1. Keep Part 10 as it is. It answers the memory question only.
+2. Ask the agent to restate the rules in free text, and score it with keywords or a judge.
+3. A multiple-choice quiz, one neighbor test per decision, and a scored count of unrelated losses (this ADR).
+
+**Choice.** Option 3. Grading of multiple choice needs no judge. Neighbor tests are plain hidden tests. Two new thresholds, H6 and H7, are written now, before the pilot.
+
+**Consequences.** One resumed turn per run, under $1 for the batch. Four neighbor tests, one quiz file and new `run.json` fields (Contracts 33, 35 and 37).
+
+**What we gave up.** The options show the right answer, so an agent that forgot can recognize it. Knows-but-violates can read too high. Free text would avoid that, but it needs a judge, and ADR-32 dropped the judge. The quiz comes after the release session, so the agent may have just read its memory file. That measures "can it find the rule", not "does it hold the rule in mind". The design still cannot show the mechanism inside the model.

@@ -355,6 +355,27 @@ class LiveViewTest(unittest.TestCase):
         self.assertEqual([x.split(" | ")[0] for x in lines], ["1", "2"])
         self.assertTrue(lines[0].endswith("| first line two"))
 
+    def test_arm_l_logs_outside_repo_without_goal_and_prints_log_only(self):
+        r = Repo()
+        self.addCleanup(r.tmp.cleanup)
+        with tempfile.TemporaryDirectory() as logdir:
+            env = dict(os.environ, GC_LOG_DIR=logdir)
+            run = lambda name, stdin, *f: subprocess.run([sys.executable, str(SCRIPTS / name), *f],  # noqa: E731
+                                                         input=json.dumps(stdin), capture_output=True, text=True, env=env)
+            run("log_prompt.py", {"cwd": str(r.path), "prompt": "skipped, no goal"})
+            self.assertFalse((Path(logdir) / "human_log.md").exists())
+            run("log_prompt.py", {"cwd": str(r.path), "prompt": "owner decision one"}, "--no-goal-ok")
+            run("log_prompt.py", {"cwd": str(r.path), "prompt": "owner decision two"}, "--no-goal-ok")
+            self.assertFalse((r.path / ".goal-contract").exists())
+            out = run("inject_goal.py", {"cwd": str(r.path)}, "--log-only").stdout
+            self.assertTrue(out.startswith("Human prompts so far, newest last."))
+            self.assertLess(out.index("decision one"), out.index("decision two"))
+            self.assertNotIn("goal-contract: mode", out)
+        with tempfile.TemporaryDirectory() as empty:
+            out = subprocess.run([sys.executable, str(SCRIPTS / "inject_goal.py"), "--log-only"], input=json.dumps({"cwd": str(r.path)}),
+                                 capture_output=True, text=True, env=dict(os.environ, GC_LOG_DIR=empty))
+            self.assertEqual((out.returncode, out.stdout), (0, ""))
+
     def test_inject_leaves_prints_live_view_and_log_after_goal(self):
         r = Repo()
         self.addCleanup(r.tmp.cleanup)

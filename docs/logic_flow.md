@@ -607,3 +607,90 @@ Caption: Grey is Path 24, which exists today. Blue is the one new step: the sess
 ## Path 25: S8b trial
 
 Path 24 applies. Only session 3 differs. Its prompt is: "Continue the work in this repo. The owner's change to rule (2) is now in force." Scoring and failure behavior follow Path 24.
+
+
+# Part 10: Horizon sweep (S9)
+
+## Visual Level
+
+```mermaid
+flowchart TD
+    A[Build workdir from the checkpoint and the arm files] --> B[Run decision session i]
+    B --> C{Did the CLI or a hook fail?}
+    C -- yes --> D[Invalid run. Replace it]
+    C -- no --> E[Save memory snapshot. Run decision tests for leaks]
+    E --> F{More decisions?}
+    F -- yes --> B
+    F -- no --> G[Run the final release session]
+    G --> H[Hidden tests: decision score and task score]
+    H --> I[Write run.json and snapshots]
+
+    classDef old fill:#e5e5e5,stroke:#777,color:#222
+    classDef new fill:#cfe3ff,stroke:#2a62b8,color:#10264d
+    classDef fail fill:#ffd6d6,stroke:#b82a2a,color:#4d1010
+    class I old
+    class A,B,C,E,F,G,H new
+    class D fail
+```
+
+Caption: Grey exists today: writing `run.json`. Blue is the new trial loop. Red is the failure path, which reuses the S7 handling of invalid runs. Level 3 explainer: [adr-29-33-horizon-sweep.html](visuals/adr-29-33-horizon-sweep.html).
+
+## Path 26: S9 trial
+
+Input: arm, level K, repeat number. Output: one `run.json` and a `snapshots/` folder.
+
+1. Copy the inventory fixture to a temp folder. Copy the S4 reference solution and its tests over it. Copy the S9 task scaffolds (Contract 33).
+2. Add the arm files. N gets `NOTES.md`. T gets the S7 tree in `GOAL.md`, with every leaf `verified`. L and T get a log folder outside the workdir: `<out>/<run_id>/log/`. The harness writes entry 0, the base task text, into that log.
+3. Commit as `start`. Record the commit id.
+4. For i from 1 to K:
+   1. Build the prompt from the template in Contract 33 with decision i and task i.
+   2. Run one `claude -p` session, fresh, with a cap of 10 turns.
+   3. Copy the memory file to `snapshots/s<i>/`. For A nothing is copied. For L the log is copied.
+   4. Run the decision tests on the current repo. Record each decision that is already applied as an early change (a leak).
+   5. Run the hidden test for task i. Record whether it passes now. A task that passes here and fails at the end is an unrelated loss.
+5. Run the final session with the release prompt and the default cap.
+6. Resume that session once with the quiz prompt (Contract 33), with no tools and a cap of 2 turns. Parse one letter per question. A missing or extra letter scores that question as wrong.
+7. Run the hidden decision tests for level K. Run the hidden task tests for tasks 1 to K. Run the S4 rule tests for the rules that no decision touched. Run the neighbor test of each decision in level K.
+8. Copy the final memory file to `snapshots/final/`. Collect the diff and the transcripts.
+
+Every session starts with no chat history. The agent has only the repo, any memory file and any hook output.
+
+## Path 27: Batch run
+
+1. Check the S9 fixture (Contract 33 invariants). A failure stops the batch with exit 5.
+2. Run the isolation probe from ADR-7. A failure stops the batch with exit 4.
+3. Build the list of runs: every arm at every level, up to the target count per cell, minus valid runs already in `--out`.
+4. Shuffle the list with `--order-seed`.
+5. Start up to `--jobs` runs at once. Before each start, check the total cost. If it is at or above `--max-cost`, start no new runs, wait for the running ones, and exit 3.
+6. When a run ends invalid, add a replacement to the end of the list. Each cell gets at most twice its target in attempts.
+7. Print one line per finished run.
+
+## Path 28: Scoring and report
+
+1. `s9_scores` runs at the end of each trial. For each scored rule, it runs the state tests in order: right final state, then each older decision, then the base rule. The first test that passes gives the failure type: `new`, `stale`, `base`. If none passes, the type is `other`.
+2. `sweep_report.py` reads every valid `run.json`. Per cell it computes three things: the mean decision score with a bootstrap 95% interval, the all-correct rate with a Wilson interval, and the count of each failure type.
+3. It computes the gaps named in Q0 and H1 to H5. Each gap gets a bootstrap 95% interval. The all-correct rates get a Fisher exact test for the same pairs.
+4. It joins each scored rule with its quiz answer and builds the know-and-do table. It computes H6 from it. It counts spillover and unrelated losses per run and computes H7.
+5. It computes H2 to H4 again with leaked decisions taken out of each run's score. It marks any threshold whose result changes.
+6. It writes `cells.csv`, `contrasts.csv` and `sweep.svg`, and prints each threshold as `held` or `failed`.
+7. I read the final memory snapshot of every run with a decision score under 1, and write one line per run on the cause.
+
+## Failure behavior
+
+| Failure | Where | What happens |
+| --- | --- | --- |
+| Fixture check fails | Path 27 step 1 | Batch stops before any run, exit 5 |
+| User settings visible | Path 27 step 2 | Batch stops, exit 4 |
+| CLI error, twice in a row | Path 26 steps 4 and 5 | Run invalid (`cli_error`), replaced |
+| Session timeout, 900 s | Path 26 steps 4 and 5 | Run invalid (`timeout`), replaced |
+| Rate limit | Path 26 steps 4 and 5 | Shows as `cli_error`. Replaced. If 3 runs in a row fail this way, the batch halves `--jobs` |
+| Hook error | Path 26, after the run | Run invalid (`hook_error`), replaced |
+| Agent applies a decision early | Path 26 step 4.4 | Counted as a leak. The run stays valid. Q0 guards the floor |
+| Agent edits the copy of the log in the workdir | Path 26 | No effect, because the hook prints from `<out>`. Logged as `log_edit_attempt` |
+| Quiz answer cannot be parsed | Path 26 step 6 | Each unparsed question scores as wrong. The count is printed. The run stays valid |
+| Cost cap reached | Path 27 step 5 | No new runs. Running runs finish. Exit 3 |
+| Cell has too few valid runs after max attempts | Path 27 step 6 | The cell is reported with its real n. No interval if n is under 3 |
+
+## Open questions (Part 10)
+
+46. **Answered 2026-11-21: leaks do not cost score, and a sensitivity check covers them.** A leak means the agent applied a decision before release day. That breaks the owner's instruction, but the final code is what the owner gets, so the main score stays on the final state. A leak also lets the code carry the decision, which skips the memory test. So Path 28 step 4 computes H2 to H4 again without leaked decisions. Leak counts per arm are reported as their own measure of instruction-following.

@@ -254,9 +254,10 @@ def make_workdir(arm: str, dest: Path, truth: dict, full_spec: bool = False, s4:
     return dest, start
 
 
-def session_env(a: argparse.Namespace) -> dict:
-    """Real repo scenarios put the venv first on PATH, so the agent's python3 can import pytest and qdrant_client."""
-    env = dict(os.environ)
+def session_env(a: argparse.Namespace, extra: dict = None) -> dict:
+    """Real repo scenarios put the venv first on PATH, so the agent's python3 can import pytest and qdrant_client.
+    `extra` adds per-run variables, such as GC_LOG_DIR for S9 arms L and T."""
+    env = dict(os.environ, **(extra or {}))
     if getattr(a, "venv_bin", None):
         env["PATH"] = a.venv_bin + os.pathsep + env.get("PATH", "")
     if getattr(a, "window", None):
@@ -265,7 +266,7 @@ def session_env(a: argparse.Namespace) -> dict:
 
 
 def claude_session(workdir: Path, prompt: str, a: argparse.Namespace, settings: Path,
-                   resume: str = None, max_turns: int = None) -> dict:
+                   resume: str = None, max_turns: int = None, env_extra: dict = None) -> dict:
     cmd = ["claude", "-p", prompt, "--model", a.model, "--output-format", "json",
            "--setting-sources", "project,local", "--settings", str(settings),
            "--max-turns", str(max_turns or a.max_turns), "--max-budget-usd", str(a.run_budget),
@@ -275,7 +276,7 @@ def claude_session(workdir: Path, prompt: str, a: argparse.Namespace, settings: 
     for attempt in (1, 2):  # retry a CLI failure once
         try:
             r = subprocess.run(cmd, cwd=workdir, stdin=subprocess.DEVNULL, capture_output=True, text=True,
-                               timeout=SESSION_TIMEOUT_S, env=session_env(a))
+                               timeout=SESSION_TIMEOUT_S, env=session_env(a, env_extra))
         except subprocess.TimeoutExpired:
             raise RunError("timeout")
         try:

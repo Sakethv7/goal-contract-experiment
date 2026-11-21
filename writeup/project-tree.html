@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project path tree</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a1a; --muted: #555; --line: #555;
+    --root-fill: #1a1a1a; --root-text: #ffffff;
+    --head-fill: #f4f4f2; --head-stroke: #555; --head-text: #1a1a1a;
+    --old-fill: #e8e8e8; --old-stroke: #7a7a7a; --old-text: #1a1a1a;
+    --new-fill: #cfe3ff; --new-stroke: #2a62b8; --new-text: #10264d;
+    --fail-fill: #ffd6d6; --fail-stroke: #b82a2a; --fail-text: #4d1010;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161a; --fg: #ececec; --muted: #aaa; --line: #bbb;
+      --root-fill: #ececec; --root-text: #14161a;
+      --head-fill: #23262c; --head-stroke: #9aa0aa; --head-text: #ececec;
+      --old-fill: #2c2f35; --old-stroke: #8b909a; --old-text: #ececec;
+      --new-fill: #1b3558; --new-stroke: #6aa4f0; --new-text: #dbe9ff;
+      --fail-fill: #4a1d1d; --fail-stroke: #f08a8a; --fail-text: #ffdede;
+    }
+  }
+  html, body { margin: 0; background: var(--bg); color: var(--fg); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 10px 16px; }
+  h1 { font-size: 17px; margin: 4px 0; }
+  p.sub { font-size: 12.5px; margin: 0 0 6px; color: var(--muted); }
+  .key { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; margin: 4px 0 6px; }
+  .key span { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 16px; height: 16px; border-radius: 3px; border: 2px solid; display: inline-block; }
+  .sw.old { background: var(--old-fill); border-color: var(--old-stroke); }
+  .sw.new { background: var(--new-fill); border-color: var(--new-stroke); }
+  .sw.fail { background: var(--fail-fill); border-color: var(--fail-stroke); }
+  svg { width: 100%; display: block; }
+  rect.root { fill: var(--root-fill); stroke: var(--root-fill); }
+  rect.head { fill: var(--head-fill); stroke: var(--head-stroke); stroke-width: 1.4; stroke-dasharray: 4 3; }
+  rect.old  { fill: var(--old-fill);  stroke: var(--old-stroke);  stroke-width: 1.6; }
+  rect.new  { fill: var(--new-fill);  stroke: var(--new-stroke);  stroke-width: 1.6; }
+  rect.fail { fill: var(--fail-fill); stroke: var(--fail-stroke); stroke-width: 1.6; }
+  text { font-size: 12px; text-anchor: middle; dominant-baseline: central; }
+  text.b { font-weight: 650; font-size: 12.5px; }
+  text.root { fill: var(--root-text); } text.head { fill: var(--head-text); }
+  text.old { fill: var(--old-text); } text.new { fill: var(--new-text); } text.fail { fill: var(--fail-text); }
+  .edge { stroke: var(--line); stroke-width: 1.4; fill: none; }
+  .ah { fill: var(--line); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Where the project went: from the main question to S9</h1>
+  <p class="sub">Read from the top. Each column is one line of questions, in the order I ran them. Each box gives the test, then its result. The four columns ran mostly in parallel; the last column is where the project ended.</p>
+  <div class="key" aria-label="Key">
+    <span><i class="sw old"></i>Answered</span>
+    <span><i class="sw fail"></i>Stopped or flawed design</span>
+    <span><i class="sw new"></i>Newest result</span>
+  </div>
+  <svg viewBox="0 0 1000 614" role="img" aria-label="Tree of the project: the main question, four lines of tests, and the S9 result">
+    <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs>
+<rect class="root" x="310.0" y="10" width="380" height="46" rx="7" style="stroke-width:3"/>
+<text class="root b" x="500.0" y="27">Does a goal file keep a coding agent on task?</text>
+<text class="root" x="500.0" y="45">Claude Code, Haiku, small Python repo</text>
+<path class="edge" d="M500.0 56 V83.0 H130 V110" marker-end="url(#ah)"/>
+<rect class="head" x="23.0" y="110" width="214" height="46" rx="7"/>
+<text class="head b" x="130" y="127">Scope</text>
+<text class="head" x="130" y="145">Does it stop stray edits?</text>
+<path class="edge" d="M500.0 56 V83.0 H375 V110" marker-end="url(#ah)"/>
+<rect class="head" x="268.0" y="110" width="214" height="46" rx="7"/>
+<text class="head b" x="375" y="127">Memory cut</text>
+<text class="head" x="375" y="145">Does the task survive lost chat?</text>
+<path class="edge" d="M500.0 56 V83.0 H625 V110" marker-end="url(#ah)"/>
+<rect class="head" x="518.0" y="110" width="214" height="46" rx="7"/>
+<text class="head b" x="625" y="127">Long sessions</text>
+<text class="head" x="625" y="145">Do rules survive compaction?</text>
+<path class="edge" d="M500.0 56 V83.0 H870 V110" marker-end="url(#ah)"/>
+<rect class="head" x="763.0" y="110" width="214" height="46" rx="7"/>
+<text class="head b" x="870" y="127">Goal changes</text>
+<text class="head" x="870" y="145">Does memory go stale?</text>
+<path class="edge" d="M130 156 V176" marker-end="url(#ah)"/>
+<rect class="old" x="23.0" y="176" width="214" height="62" rx="7"/>
+<text class="old b" x="130" y="193">S1: one session</text>
+<text class="old" x="130" y="211">Block mode: 0 of 10 runs with</text>
+<text class="old" x="130" y="227">stray edits. No skill: 5 of 10</text>
+<path class="edge" d="M130 238 V258" marker-end="url(#ah)"/>
+<rect class="old" x="23.0" y="258" width="214" height="62" rx="7"/>
+<text class="old b" x="130" y="275">S2: a request mid-task</text>
+<text class="old" x="130" y="293">No arm stopped the request.</text>
+<text class="old" x="130" y="309">Approval line cannot be verified</text>
+<path class="edge" d="M375 156 V176" marker-end="url(#ah)"/>
+<rect class="old" x="268.0" y="176" width="214" height="62" rx="7"/>
+<text class="old b" x="375" y="193">S3: chat history cut</text>
+<text class="old" x="375" y="211">Notes file = skill: 10 of 10.</text>
+<text class="old" x="375" y="227">No memory: agent forgot the task</text>
+<path class="edge" d="M375 238 V258" marker-end="url(#ah)"/>
+<rect class="old" x="268.0" y="258" width="214" height="62" rx="7"/>
+<text class="old b" x="375" y="275">S4: six rules, three cuts</text>
+<text class="old" x="375" y="293">Any memory: 6 of 6 rules.</text>
+<text class="old" x="375" y="309">No memory: 0 of 6</text>
+<path class="edge" d="M375 320 V340" marker-end="url(#ah)"/>
+<rect class="fail" x="268.0" y="340" width="214" height="62" rx="7"/>
+<text class="fail b" x="375" y="357">S5: twelve rules</text>
+<text class="fail" x="375" y="375">Too easy: notes kept 12 of 12.</text>
+<text class="fail" x="375" y="391">Stopped after 3 runs</text>
+<path class="edge" d="M375 402 V422" marker-end="url(#ah)"/>
+<rect class="old" x="268.0" y="422" width="214" height="62" rx="7"/>
+<text class="old b" x="375" y="439">R1, R2: a real repo</text>
+<text class="old" x="375" y="457">Memory 10 of 10, none 0 of 10.</text>
+<text class="old" x="375" y="473">Notes and skill tied</text>
+<path class="edge" d="M625 156 V176" marker-end="url(#ah)"/>
+<rect class="old" x="518.0" y="176" width="214" height="62" rx="7"/>
+<text class="old b" x="625" y="193">P1: forced compactions</text>
+<text class="old" x="625" y="211">Rules held at 2 and 3 cuts.</text>
+<text class="old" x="625" y="227">1 of 2 runs lost them at 4</text>
+<path class="edge" d="M870 156 V176" marker-end="url(#ah)"/>
+<rect class="fail" x="763.0" y="176" width="214" height="62" rx="7"/>
+<text class="fail b" x="870" y="193">S7: goal and code change</text>
+<text class="fail" x="870" y="211">The repo held every fact.</text>
+<text class="fail" x="870" y="227">No arm went stale. Stopped</text>
+<path class="edge" d="M870 238 V258" marker-end="url(#ah)"/>
+<rect class="fail" x="763.0" y="258" width="214" height="62" rx="7"/>
+<text class="fail b" x="870" y="275">S8: change only in memory</text>
+<text class="fail" x="870" y="293">Prompt said &#x27;next session&#x27;.</text>
+<text class="fail" x="870" y="309">Agents waited. Unclear result</text>
+<path class="edge" d="M870 320 V340" marker-end="url(#ah)"/>
+<rect class="old" x="763.0" y="340" width="214" height="62" rx="7"/>
+<text class="old b" x="870" y="357">S8b: clear prompt</text>
+<text class="old" x="870" y="375">Notes 8 of 8 = tree 8 of 8.</text>
+<text class="old" x="870" y="391">No memory: 0 of 3</text>
+<path class="edge" d="M870 402 V422" marker-end="url(#ah)"/>
+<rect class="new" x="763.0" y="422" width="214" height="62" rx="7" style="stroke-width:3"/>
+<text class="new b" x="870" y="439">S9: sweep, 1 to 6 decisions</text>
+<text class="new" x="870" y="457">Harness log 1.0, tree 1.0,</text>
+<text class="new" x="870" y="473">agent notes 0.2, none 0.0</text>
+<path class="edge" d="M870 484 V504" marker-end="url(#ah)"/>
+<rect class="new" x="763.0" y="504" width="214" height="94" rx="7" style="stroke-width:3"/>
+<text class="new b" x="870" y="521">Answer so far</text>
+<text class="new" x="870" y="539">Memory works only if something</text>
+<text class="new" x="870" y="555">writes it reliably. The agent</text>
+<text class="new" x="870" y="571">often does not. No erasure,</text>
+<text class="new" x="870" y="587">no drift seen</text>
+  </svg>
+</main>
+</body>
+</html>

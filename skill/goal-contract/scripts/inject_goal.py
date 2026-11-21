@@ -10,8 +10,9 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from check_goal import (HUMAN_LOG, PINNED_FILE, STATE_DIR, Malformed, current_mode, invariants_block, parse_goal,  # noqa: E402
+from check_goal import (PINNED_FILE, STATE_DIR, Malformed, current_mode, invariants_block, parse_goal,  # noqa: E402
                         pinned_fields, render_tree, run_leaf_checks)
+from log_prompt import log_path  # noqa: E402
 
 LOG_ENTRY_CHARS = 500
 
@@ -22,7 +23,7 @@ def live_section(repo: Path, goal, rollup: bool) -> str:
              "Set any step flagged STALE back to in_progress and fix it.",
              render_tree(goal, run_leaf_checks(repo, goal), rollup)]
     try:
-        entries = (repo / STATE_DIR / HUMAN_LOG).read_text().splitlines()
+        entries = log_path(repo).read_text().splitlines()
     except OSError:
         entries = []
     if entries:
@@ -30,6 +31,17 @@ def live_section(repo: Path, goal, rollup: bool) -> str:
                      "If a newer prompt changes a rule, update the Goal text in GOAL.md to match.")
         parts += [e if len(e) <= LOG_ENTRY_CHARS else e[:LOG_ENTRY_CHARS] + " [cut]" for e in entries]
     return "\n".join(parts)
+
+
+def print_log_only(repo: Path) -> None:
+    """Arm L (Contract 34): the human prompt log and nothing else. Silent when there is no log."""
+    try:
+        entries = log_path(repo).read_text().splitlines()
+    except OSError:
+        return
+    if entries:
+        print("Human prompts so far, newest last. The newest instruction wins.")
+        print("\n".join(e if len(e) <= LOG_ENTRY_CHARS else e[:LOG_ENTRY_CHARS] + " [cut]" for e in entries))
 
 
 def save_pinned_copy(repo: Path, content: str) -> None:
@@ -45,9 +57,13 @@ def main(argv=None) -> int:
     parser.add_argument("--pin", action="store_true", help="print the invariants at the top and the bottom")
     parser.add_argument("--leaves", action="store_true", help="run each evidence_command and print a live view and the human log")
     parser.add_argument("--rollup", action="store_true", help="with --leaves: show parents with a derived flag")
+    parser.add_argument("--log-only", action="store_true", help="print only the human prompt log, no GOAL.md")
     args = parser.parse_args(argv)
     try:
         hook = json.loads(sys.stdin.read() or "{}")
+        if args.log_only:
+            print_log_only(Path(hook.get("cwd") or os.getcwd()))
+            return 0
         goal_file = Path(hook.get("cwd") or os.getcwd()) / "GOAL.md"
         if not goal_file.exists():
             return 0

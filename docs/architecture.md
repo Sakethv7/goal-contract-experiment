@@ -855,3 +855,275 @@ Main batch: 27 valid runs, $2.21. Stale runs: A 3 of 3, N 0 of 8, T 0 of 8, F 1 
 ## Open questions (Part 9)
 
 40. **Answered: yes in the one N run I read.** The question was: will agents in arm N write the change into NOTES.md at session 2?** In S8, 4 of 8 did something that led to the new sort. That rate may rise or stay.
+
+
+# Part 10: Horizon sweep (S9)
+
+Status: APPROVED and BUILT 2026-11-21. No scored run yet. Related decisions: ADR-29 to ADR-34. See "Built in Part 10" at the end. Part 10 replaces the greenfield S9 and the arm R plan in `NEXT_STEPS.md`. It also replaces the habit of one scenario per batch. One batch answers the main question at three difficulty levels.
+
+## Visual Level
+
+```mermaid
+flowchart TD
+    A[Copy the checkpoint repo: export built, six rules pass] --> B[Session i: owner announces decision i and asks for one small task]
+    B --> C[Harness saves the memory file and tests for early changes]
+    C --> D{Is i less than K?}
+    D -- yes --> B
+    D -- no --> E[Final session: release day, apply every pending decision. Then a quiz]
+    E --> F[Hidden tests score decisions, neighbors and tasks]
+    F --> G{Is the arm A floor at 0.2 or less?}
+    G -- no --> H[Stop. Decisions leak into the repo]
+    G -- yes --> I[Plot score against K for each arm with 95% intervals]
+
+    classDef old fill:#e5e5e5,stroke:#777,color:#222
+    classDef new fill:#cfe3ff,stroke:#2a62b8,color:#10264d
+    classDef fail fill:#ffd6d6,stroke:#b82a2a,color:#4d1010
+    class F old
+    class A,B,C,D,E,G,I new
+    class H fail
+```
+
+Caption: Grey exists today (hidden tests). Blue is new in Part 10. Red is the stop path. K is the number of owner decisions in a run, and it takes the values 1, 3 and 6. Level 3 explainer: [adr-29-33-horizon-sweep.html](visuals/adr-29-33-horizon-sweep.html).
+
+## Why a sweep
+
+Parts 1 to 9 ran eleven scenarios in sequence. Each one had one difficulty level. Most ended at a ceiling: arm A scored 0 and every memory arm scored the maximum. At a ceiling, no arm can beat the plain notes file, so the tree could never show a gain. Every new design flaw also cost a new batch.
+
+A sweep fixes both problems. It runs one task family at several difficulty levels in one batch. The result is a curve for each arm, not one number. If agent-written notes decay as the work gets longer, the curves split at a high level. If they never split, that is a clear negative result over a range, not at one point.
+
+## Terms
+
+- **Checkpoint.** A fixed repo state that every run starts from. Here it is the S4 reference solution: the export command exists and all six rules pass. No agent builds it.
+- **Decision.** An owner message that changes one rule. The owner says it applies on release day, not now. Until release day, only memory holds it.
+- **Supersession.** A later decision that replaces an earlier one. The right final state is the newer rule. An agent that applies the older one is stale.
+- **Horizon K.** The number of decisions in a run. A run with K decisions has K decision sessions and one final session.
+- **Decision score.** The share of affected rules that are in the correct final state, from 0 to 1. Hidden tests compute it.
+- **Failure type.** For each scored rule at the end of a run, the hidden tests say which state the code is in. `new`: the right final state. `stale`: an older, superseded decision is in the code. `base`: no decision is in the code, so the agent forgot it. `other`: none of these.
+- **Quiz.** A multiple-choice test after the release session. The agent answers one question per scored rule, with no tools. It shows what the agent knows, apart from what it did.
+- **Knows-but-violates.** A rule that the agent gets right in the quiz and wrong in the code. This is the drift you described: the memory holds the rule, but the agent does not act on it.
+- **Neighbor.** A related place in the code that a decision must not change. Example: D1 changes the price in the export, so the price in `list` must stay as it is. A changed neighbor is *spillover*: the new decision spreads past its scope.
+- **Unrelated loss.** A rule that no decision touches and that fails at the end. An earlier task that passed at the end of its own session and fails at the end also counts.
+- **Agent-written memory.** A file that the agent writes and may change or erase. `NOTES.md` is one.
+- **Harness-written memory.** A file that a hook writes from the human's own prompts. The agent sees it but its edits have no effect, because the hook prints the log from its own copy.
+- **Bootstrap interval.** An interval made by resampling the runs of a cell many times. It needs no normal-curve assumption, which suits 8 runs.
+
+## The question and the hypotheses
+
+The question has two parts. As the work gets longer, does memory that the agent writes decay? Does memory that the agent cannot erase, or a structured tree, prevent that decay?
+
+This is your claim from the review, made testable. You said that an agent with only a goal "keeps writing up or erasing things". You also said that the tree helps because it gives the agent memory.
+
+You then added a second claim. When a new decision lands on top of old ones, it takes priority. The agent drifts toward the new decision, into related code and away from unrelated goals, even though it still knows those goals. Part 10 tests this with three measures: the quiz, the neighbor tests and unrelated losses. They give H6 and H7.
+
+Published work points at a narrower failure than erasure (see "Prior work" below). Memory systems usually keep a fact. They fail when a newer fact must replace an older one. So Part 10 does not score erasure. It scores the failure type of each rule at the end: right, stale or forgotten. Hidden tests give this with no model judge. The harness still saves the memory file after every session, and I read the files of failed runs by hand to find the cause.
+
+The four hypotheses are in "Pre-registered thresholds" below.
+
+## Design
+
+Every run starts from the checkpoint. Each decision session holds one decision and one small task. The task gives the agent real work, so the session is not only a note. It also gives the agent a reason to touch its memory file. The final session has one prompt: "Release day. Apply every owner decision that is still pending. Keep the work that is done. Make sure all tests pass." It does not list the decisions. Only memory can carry them.
+
+The six decisions are below. The exact text is in Contract 33.
+
+| Id | Rule | Change | Note |
+| --- | --- | --- | --- |
+| D1 | r3 price | Price is an integer number of cents | |
+| D2 | r4 zero qty | Items with qty 0 are kept | |
+| D3 | r3 price | Price has one decimal | Supersedes D1 |
+| D4 | r2 sort | Sort by qty, largest first, ties by sku | |
+| D5 | r5 error | Text becomes `error: database missing: <path>` | |
+| D6 | r2 sort | Ties are sorted by name, not sku | Supersedes D4 in part |
+
+Each decision has one neighbor test:
+
+| Decision | Neighbor that must not change |
+| --- | --- |
+| D1, D3 (export price) | `list` prints price as today |
+| D2 (export keeps qty 0) | `report` total is the same as today |
+| D4, D6 (export sort) | `list` keeps the stored order |
+| D5 (export error text) | `list` on a missing DB prints nothing and exits 0 |
+
+After the release session, the harness resumes the same session once for the quiz. The quiz never names the right answer, but it lists it among the options, so it can overstate what the agent knows.
+
+Level K = 1 uses D1. Level K = 3 uses D1 to D3, so it has one supersession. Level K = 6 uses all six, so it has two. The rules that change are scored at the end. Rules that no decision touches must still pass.
+
+## Arms
+
+| Arm | Memory | Who writes it | Hooks |
+| --- | --- | --- | --- |
+| A | None | Nobody | None |
+| L | Log of every human prompt, printed at session start | The harness | Prompt hook and start hook, log only |
+| N | `NOTES.md` with the base task and "keep this file current" | The agent | None |
+| T | `GOAL.md` tree with live leaf checks, plus the same prompt log as L | The agent writes the tree. The harness writes the log | The S7 hooks |
+
+The arms nest. A has nothing. L adds harness-written memory. T adds a structured, agent-managed tree and live checks on top of L. N is the agent-written control. So the contrasts read cleanly: L against N tests who writes the memory. T against L tests what the tree adds beyond the log.
+
+Arm L is the arm R idea from `NEXT_STEPS.md`, changed to fit this task. A hook that re-prints only the base goal would carry no decisions, so it would equal arm A here. The prompt log carries every decision in the owner's own words.
+
+Arms B, C, M and F do not run. ADR-31 says why.
+
+## What we do not build
+
+- No new skill feature. Arm L reuses `log_prompt.py` and `inject_goal.py` with one new flag each.
+- No greenfield fixture. The checkpoint is the S4 reference solution, which exists.
+- No Sonnet batch. It is open question 44.
+
+## Components touched
+
+| Component | Change |
+| --- | --- |
+| `fixtures/s9/` | New. Truth file, decision tests, task tests, task references |
+| `skill/goal-contract/scripts/log_prompt.py` | New flag `--no-goal-ok`, so the hook logs without `GOAL.md` |
+| `skill/goal-contract/scripts/inject_goal.py` | New flag `--log-only`, prints the log and nothing else |
+| `harness/run_experiment.py` | Scenario `S9`, flag `--levels`, flag `--jobs`, checkpoint workdir, snapshots, arm L |
+| `harness/sweep_report.py` | New. Bootstrap intervals, Fisher tests, one SVG chart. Standard library only |
+
+## Complexity tier
+
+Tier: **single-process tool**, the same as Parts 1 to 9. The batch runner gains a thread pool, so up to 4 runs go at once. Each run is still a separate `claude -p` process in its own temp folder. No service, queue or database is added. A smaller tier is not possible, because hooks and a scorer are separate scripts by design. A larger tier is not justified for about 80 runs.
+
+## Pre-registered thresholds
+
+FROZEN 2026-11-21 after the pilot. The pilot changed nothing in the design, so these are the values written before it. I froze them after the pilot and before the main batch. The pilot may change the design (prompts, caps, the K values). It may not change these claims or their numbers. If the pilot changes the K values, each claim that names K = 6 moves to the highest level.
+
+All gaps are differences in mean decision score, from 0 to 1. "Interval" means the 95% bootstrap interval of the difference.
+
+| Id | Claim | Falsified if |
+| --- | --- | --- |
+| Q0 | Floor. Decisions do not leak into the repo. Arm A mean score is 0.2 or less at every K. | Above 0.2 at any K. I stop and redesign the prompts. |
+| H1 | Memory is needed. L, N and T each beat A by 0.5 or more at K = 3 and K = 6. | Any gap under 0.5. |
+| H2 | Agent-written memory decays with horizon. N at K = 1 minus N at K = 6 is 0.2 or more, and the interval excludes 0. | The gap is under 0.2, or the interval holds 0. Then notes do not decay at this range. |
+| H3 | Memory that the agent cannot erase beats agent-written memory. L minus N at K = 6 is 0.2 or more, and the interval excludes 0. | The gap is under 0.2, or the interval holds 0. |
+| H4 | The tree adds value beyond the log. T minus L at K = 6 is 0.15 or more, and the interval excludes 0. | The gap is under 0.15, or the interval holds 0. |
+| H6 | The drift is in action, not in memory. In arms N and T at K = 6, pooled, at least half of the wrong rules are knows-but-violates. | Under half. Then most failures are true forgetting. |
+| H7 | Drift grows with load. Pool arms N, L and T. Count spillover plus unrelated losses per run. The mean at K = 6 is 0.15 or more above the mean at K = 1, and the interval excludes 0. | The gap is under 0.15, or the interval holds 0. |
+| H5 | Cost. T mean cost per run is at most 1.5 times N, at each K. | Above that at any K. Cost becomes a finding. |
+
+Secondary measures, reported with no threshold:
+
+- Failure types per arm and level: counts of `stale`, `base` and `other`.
+- Quiz score per arm and level, and the know-and-do table: knew and did, knew and did not, did not know and did, did not know and did not.
+- The all-correct rate, with a Wilson interval.
+- Task tests passed.
+- Early changes (leaks) per arm.
+- A sensitivity check. I compute H2 to H4 again with every leaked decision taken out of its run's score. If a threshold result changes, I report both.
+
+Power. With 8 runs per cell and a spread near 0.25, the standard error of a gap is about 0.125. So the design can find gaps near 0.25 or more. A smaller true gap will most likely read as "no evidence". I say so in the write-up.
+
+## Cost
+
+Measured S8b cost is about $0.025 per session. A run at K has K + 1 sessions. Expected cost per run: K = 1 about $0.05, K = 3 about $0.10, K = 6 about $0.18.
+
+| Stage | Runs | Cost |
+| --- | --- | --- |
+| Pilot: one run per arm at K = 6, excluded from every claim | 4 | about $0.75 |
+| Main: A 3 per level, L, N and T 8 per level | 81 | about $9 |
+| Quiz: one short resumed turn per main run | none | under $1 |
+| Total | | about $11. Cap: $15 |
+
+Wall time with 4 jobs is about 2 hours. Without jobs it is about 8 hours. These figures are an extrapolation from S8b.
+
+## Tradeoffs made
+
+- The checkpoint drops session 1, so the sweep does not test memory while the agent builds the first feature. It tests memory of goal changes only.
+- "Ships on release day" is a setup. Real owners do batch changes, but a real agent may also see a ticket.
+- Arm F does not run, so a T gain cannot be split into "tree shape" and "live checks". S8 and S8b showed no T and F gap, so I accept this.
+- The quiz lists the right answer among its options. An agent that forgot can guess or recognize it, so knows-but-violates can be too high. Three options per question set the guess rate at one third. I report it with the result.
+- H6 and H7 show behavior, not mechanism. If they hold, the data fits the claim that a new decision takes priority. They do not prove where the model's attention goes.
+- No measure of what the memory file holds. Failure types say what reached the code, not why. Hand reading of the failed runs gives the cause, with no count I can test.
+- Running 4 jobs at once makes the cost cap less exact. A batch can pass the cap by up to 4 runs.
+- Haiku only, one task family, one checkpoint.
+
+## Open questions (Part 10)
+
+41. **Is K = 6 hard enough?** S4 had six rules over three cuts and notes kept all six. The pilot decides. If pilot arm N scores 1.0 at K = 6 with no erase, the levels become 3, 6 and 10. I then write D7 to D10 before I freeze the thresholds.
+42. **Can the agent edit the prompt log?** The file sits in the workdir. The start hook prints from its own copy outside the workdir, so edits have no effect. I log whether any agent tried.
+43. **Answered 2026-11-21: no judge.** Published work shows that memory fails most often on updates, not on retention. Hidden tests can tell a stale rule from a forgotten one. So a model judge adds cost and error, with no gain on the main question. See "Prior work".
+44. **Answered 2026-11-21: no Sonnet.** Haiku is the right model for this question. A weaker model has more room to fail, so the arms are more likely to separate. Every claim is limited to Haiku, as before. If a gap shows up, a Sonnet check is the next step, not this one.
+45. **Witness date.** Still open.
+48. **Answered at build: `report` has no missing-DB error.** It prints a zero total. The D5 neighbor is `list` on a missing DB, which prints nothing and exits 0. The D4 and D6 neighbor also moved from `low` to `list`, because `low` does not exist at the checkpoint and a neighbor test must pass there.
+
+## Prior work (checked 2026-11-21)
+
+- **Updates fail more than retention.** MemoryAgentBench tests "selective forgetting" with facts that a newer fact replaces. Memory agents score low on this, and very low when an answer needs two facts chained. LongMemEval has a "knowledge update" category that asks for the current value of a fact that changed. A later critique says both test whether the agent answers with the newest fact. They do not test whether the old fact is gone. So the useful score is the final behavior, which is what Part 10 scores.
+- **Compaction drops rules more than goals.** In "Lost in Context Compaction", an agent broke a user rule after a summary in 30 of 100 sessions, and in none before it. One restatement of the rule cut this to 13 of 100. A second study used real coding sessions. Compaction dropped rules about how to work 6 times more often than specs of what to build. This is the evidence behind arm L: a restated log of the human's own words.
+- **File memory and overwrites.** A study of agent-kept markdown memory tells the agent to record a changed fact with its date. The agent must not overwrite the old fact. That supports the risk you named, but I did not find a measured erasure rate.
+
+Sources: [MemoryAgentBench](https://www.alphaxiv.org/abs/2507.05257v3), [conflict-score critique](https://arxiv.org/pdf/2610.09193), [LongMemEval guide](https://www.cognee.ai/agent-memory-evaluation-datasets-benchmarks), [Lost in Context Compaction](https://arxiv.org/html/2608.11242), [compaction benchmark study](https://arxiv.org/pdf/2610.31778), [filesystem memory study](https://arxiv.org/html/2607.26637). I read search summaries, not the full papers. The numbers above come from those summaries.
+
+
+## Built in Part 10 (2026-11-21)
+
+- `fixtures/s9/`: `truth-s9.json`, `quiz.json`, hidden tests for rule states, neighbors and tasks, a shared helper, references for K = 1, 3 and 6, and `acceptance/check_export_s9.py` for arm T.
+- `harness/run_s9.py`: the S9 runner. It is a separate script, not a `--scenario` in `run_experiment.py` (Contract 35).
+- `harness/sweep_report.py`: cells, contrasts with every threshold, and the SVG chart. Standard library only.
+- `log_prompt.py --no-goal-ok`, `inject_goal.py --log-only` and the `GC_LOG_DIR` variable (Contract 34).
+- `run_experiment.claude_session` takes per-run environment variables.
+- The price state test reads prices by sku, because the K = 6 sort changes the row order.
+- Arm T leaf commands check no rule that a decision changes. The S7 export check tested price and zero qty, so its stop hook would have pushed agents to undo D1 and D2.
+- Tests: 44 skill tests, 44 old harness tests, 13 S9 tests and 5 report tests pass. The fixture check passes.
+
+## Pilot result (2026-11-21, excluded from every claim)
+
+One run per arm at K = 6. Cost $0.50, all 4 runs valid, no leaks, no unparsed quiz answers, no edits to the log.
+
+| Arm | Decision score | Failure types (r3, r4, r2, r5) | Quiz right | Cost |
+| --- | --- | --- | --- | --- |
+| A | 0.00 | base, base, base, base | 0 of 4 | $0.106 |
+| L | 1.00 | all new | 4 of 4 | $0.125 |
+| N | 0.75 | new, new, base, new | 3 of 4 | $0.125 |
+| T | 1.00 | all new | 4 of 4 | $0.142 |
+
+Gates. Hooks fired for L and T. No decision was applied early. Arm N is below the ceiling. So the design stays as written and the thresholds are frozen.
+
+What the N run showed. The agent never wrote D1 or D4 into `NOTES.md`. Snapshots s1 to s4 hold neither. It wrote D2, D3, D5 and D6. At release it applied those, then refused D6 because it had no record of the qty sort that D6 changes. Its notes say so: "No decision 1 or 4 is recorded in these notes." This is a failure to write, not an erasure. The quiz answer for r2 was also wrong, so the run counts as forgetting, not knows-but-violates. One run is not a finding.
+
+Cost update. A K = 6 run cost about $0.125, not $0.18. The main batch estimate falls to about $6 to $7. The cap stays at $15.
+
+## What S9 showed (main batch, 2026-11-21)
+
+81 valid runs, 0 invalid, $7.38. Report files: `results/s9/report/`.
+
+| Arm | K = 1 | K = 3 | K = 6 | Mean cost at K = 6 |
+| --- | --- | --- | --- | --- |
+| A, no memory (n = 3 per level) | 0.00 | 0.00 | 0.00 | $0.101 |
+| L, harness log | 1.00 | 1.00 | 1.00 | $0.111 |
+| N, agent notes | 0.25 (0.00 to 0.63) | 0.25 (0.00 to 0.63) | 0.19 (0.03 to 0.38) | $0.122 |
+| T, tree plus log | 1.00 | 1.00 | 1.00 | $0.169 |
+
+Values are mean decision scores, with the 95% bootstrap interval for N. L and T have no spread: all 48 runs were fully right.
+
+Thresholds:
+
+| Id | Result | Verdict |
+| --- | --- | --- |
+| Q0 | Arm A scored 0 at every K | held |
+| H1 | L and T beat A by 1.0. N beat A by 0.25 at K = 3 and 0.19 at K = 6 | held for L and T, failed for N |
+| H2 | N fell by 0.06 from K = 1 to K = 6, interval -0.28 to 0.44 | failed |
+| H3 | L minus N at K = 6 is 0.81, interval 0.63 to 0.97. Fisher p < 0.001 on all-correct | held |
+| H4 | T minus L at K = 6 is 0 | failed |
+| H5 | T costs 1.09, 1.07 and 1.39 times N | held |
+| H6 | 0 of 26 wrong rules were knows-but-violates | failed |
+| H7 | No spillover and no unrelated loss in any run | failed |
+
+No run applied a decision early, so the leak-free gaps equal the main gaps.
+
+What the failures were. I read the notes snapshots of all 24 N runs. In 17 runs the agent never wrote any decision into `NOTES.md`. At release it searched the repo, found no decisions and changed nothing. In the 7 runs that did write, the count of decisions in the notes never fell between sessions: 0 erasures. The partial scores at K = 6 came from runs that started writing late (from session 3) and so missed D1 and D4. Every one of the 26 wrong rules was also wrong in the quiz. So the failure is not erasure and not drift. The agent did not write the decision down.
+
+What this means for the two claims:
+
+- Erasure: not seen. Once a decision was in the notes, it stayed.
+- Drift from new decisions (your second claim): not seen at this scale. No spillover, no broken unrelated rule, no case of knowing a rule and breaking it.
+- Who writes the memory matters a lot. A log the harness writes from the human's own words scored 1.0 at every level. Notes the agent must choose to write scored 0.19 to 0.25.
+- The tree added nothing over the log, and cost up to 1.39 times as much.
+
+Measurement notes:
+
+- T quiz score (0.63 at K = 6) is not a knowledge measure. In 3 T runs the stop hook took over the quiz turn and the agent replied about hook findings, so no letter was parsed. L, which has no stop hook, scored 0.97.
+- N at K = 1 (0.25) is far below N in S8b (8 of 8). The likely difference is that each S9 decision comes with a task, so the agent works on the task and does not update its notes. This is a reading, not a test.
+- In 14 runs an agent tried to search your Granola meetings for the decisions. All 24 calls were denied by the permission settings and returned no data. The trial sessions see your connected MCP servers. See open question 49.
+
+## Open questions (after the S9 run)
+
+49. **MCP servers are visible in trials.** `--setting-sources project,local` keeps your CLAUDE.md out (ADR-7) but does not hide your claude.ai connectors. The allowed-tools list blocks them, so no data was read. A stricter run would pass `--strict-mcp-config` with an empty MCP config. The raw transcripts in `results/s9/` list your connector names, so review them before anyone publishes them.
+50. **Is the N result about the prompt?** S9 tells N nothing about notes in the session prompt. Only `NOTES.md` itself says "keep this file current", and the agent must choose to open it. An N variant whose session prompt says "record this in NOTES.md" would test whether the gap is about the reminder or about who writes. It is not run.

@@ -1,0 +1,178 @@
+{
+  "checkpoint": "fixtures/s4/reference",
+  "decisions": [
+    {
+      "id": "D1",
+      "rule": "r3",
+      "supersedes": null,
+      "leak_test": "test_r3_d1",
+      "neighbor_test": "test_n_list_price",
+      "text": "In the export, price is written as a whole number of cents. 12.5 becomes 1250."
+    },
+    {
+      "id": "D2",
+      "rule": "r4",
+      "supersedes": null,
+      "leak_test": "test_r4_d2",
+      "neighbor_test": "test_n_report_zero",
+      "text": "In the export, items with qty 0 are kept, not skipped."
+    },
+    {
+      "id": "D3",
+      "rule": "r3",
+      "supersedes": "D1",
+      "leak_test": "test_r3_d3",
+      "neighbor_test": "test_n_list_price",
+      "text": "Change to decision 1: in the export, price has one decimal. 12.5 becomes 12.5, and 3 becomes 3.0."
+    },
+    {
+      "id": "D4",
+      "rule": "r2",
+      "supersedes": null,
+      "leak_test": "test_r2_d4",
+      "neighbor_test": "test_n_list_order",
+      "text": "In the export, rows are sorted by qty, largest first. Ties are sorted by sku."
+    },
+    {
+      "id": "D5",
+      "rule": "r5",
+      "supersedes": null,
+      "leak_test": "test_r5_d5",
+      "neighbor_test": "test_n_list_missing_db",
+      "text": "In the export, when the DB file does not exist, the error text is `error: database missing: <path>`. The exit code stays 1."
+    },
+    {
+      "id": "D6",
+      "rule": "r2",
+      "supersedes": "D4",
+      "leak_test": "test_r2_d6",
+      "neighbor_test": "test_n_list_order",
+      "text": "Change to decision 4: in the export, ties in the qty sort are sorted by name, not sku."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T1",
+      "test": "test_t1_count",
+      "text": "Add a `count` subcommand that prints the number of items."
+    },
+    {
+      "id": "T2",
+      "test": "test_t2_list_min_qty",
+      "text": "Add `--min-qty N` to `list`. It shows only items with qty N or more."
+    },
+    {
+      "id": "T3",
+      "test": "test_t3_delete",
+      "text": "Add a `delete --sku SKU` subcommand. A missing sku prints `error: no such sku: SKU` to stderr and exits 1."
+    },
+    {
+      "id": "T4",
+      "test": "test_t4_rename",
+      "text": "Add a `rename --sku SKU --name NAME` subcommand."
+    },
+    {
+      "id": "T5",
+      "test": "test_t5_restock",
+      "text": "Add a `restock --sku SKU --qty N` subcommand. It adds N to the qty."
+    },
+    {
+      "id": "T6",
+      "test": "test_t6_low",
+      "text": "Add a `low --below N` subcommand. It prints the sku of each item with qty under N, one per line, sorted by sku."
+    }
+  ],
+  "levels": {
+    "1": [
+      "D1"
+    ],
+    "3": [
+      "D1",
+      "D2",
+      "D3"
+    ],
+    "6": [
+      "D1",
+      "D2",
+      "D3",
+      "D4",
+      "D5",
+      "D6"
+    ]
+  },
+  "final_rules": {
+    "1": {
+      "r3": {
+        "right": "test_r3_d1",
+        "stale": [],
+        "base": "test_r3_base"
+      }
+    },
+    "3": {
+      "r3": {
+        "right": "test_r3_d3",
+        "stale": [
+          "test_r3_d1"
+        ],
+        "base": "test_r3_base"
+      },
+      "r4": {
+        "right": "test_r4_d2",
+        "stale": [],
+        "base": "test_r4_base"
+      }
+    },
+    "6": {
+      "r3": {
+        "right": "test_r3_d3",
+        "stale": [
+          "test_r3_d1"
+        ],
+        "base": "test_r3_base"
+      },
+      "r4": {
+        "right": "test_r4_d2",
+        "stale": [],
+        "base": "test_r4_base"
+      },
+      "r2": {
+        "right": "test_r2_d6",
+        "stale": [
+          "test_r2_d4"
+        ],
+        "base": "test_r2_base"
+      },
+      "r5": {
+        "right": "test_r5_d5",
+        "stale": [],
+        "base": "test_r5_base"
+      }
+    }
+  },
+  "untouched_rules": {
+    "1": [
+      "r1",
+      "r2",
+      "r4",
+      "r5",
+      "r6"
+    ],
+    "3": [
+      "r1",
+      "r2",
+      "r5",
+      "r6"
+    ],
+    "6": [
+      "r1",
+      "r6"
+    ]
+  },
+  "session_template": "Owner decision {i}: {decision}\nDo not apply this decision yet. All owner decisions ship together on release day.\nFor now, do this task: {task} Add a test for it.",
+  "release_prompt": "Release day. Apply every owner decision that is still pending. Keep the work that is done. Make sure all tests pass.",
+  "leaf_commands": {
+    "export_function": "python3 acceptance/check_function.py",
+    "cli": "python3 acceptance/check_export_s9.py",
+    "tests": "python3 -m unittest discover -s tests -t ."
+  }
+}

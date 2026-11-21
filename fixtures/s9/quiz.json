@@ -1,0 +1,79 @@
+{
+  "1": [
+    {
+      "rule": "r3",
+      "text": "In the export, how is price written now?",
+      "options": {
+        "A": "two decimals (12.5 becomes 12.50)",
+        "B": "one decimal (12.5 becomes 12.5)",
+        "C": "whole cents (12.5 becomes 1250)"
+      },
+      "answer": "C"
+    }
+  ],
+  "3": [
+    {
+      "rule": "r3",
+      "text": "In the export, how is price written now?",
+      "options": {
+        "A": "one decimal (12.5 becomes 12.5)",
+        "B": "two decimals (12.5 becomes 12.50)",
+        "C": "whole cents (12.5 becomes 1250)"
+      },
+      "answer": "A"
+    },
+    {
+      "rule": "r4",
+      "text": "In the export, what happens to items with qty 0 now?",
+      "options": {
+        "A": "items with qty 0 are kept",
+        "B": "items with qty 0 are kept and placed last",
+        "C": "items with qty 0 are skipped"
+      },
+      "answer": "A"
+    }
+  ],
+  "6": [
+    {
+      "rule": "r3",
+      "text": "In the export, how is price written now?",
+      "options": {
+        "A": "two decimals (12.5 becomes 12.50)",
+        "B": "one decimal (12.5 becomes 12.5)",
+        "C": "whole cents (12.5 becomes 1250)"
+      },
+      "answer": "B"
+    },
+    {
+      "rule": "r4",
+      "text": "In the export, what happens to items with qty 0 now?",
+      "options": {
+        "A": "items with qty 0 are kept",
+        "B": "items with qty 0 are skipped",
+        "C": "items with qty 0 are kept and placed last"
+      },
+      "answer": "A"
+    },
+    {
+      "rule": "r2",
+      "text": "In the export, how are rows sorted now?",
+      "options": {
+        "A": "sorted by qty, largest first, ties by name",
+        "B": "sorted by sku",
+        "C": "sorted by qty, largest first, ties by sku"
+      },
+      "answer": "A"
+    },
+    {
+      "rule": "r5",
+      "text": "In the export, what is the error text when the DB file does not exist?",
+      "options": {
+        "A": "`error: db not found: <path>`",
+        "B": "`error: database missing: <path>`",
+        "C": "`error: no such database: <path>`"
+      },
+      "answer": "B"
+    }
+  ],
+  "prompt": "Without using tools, answer each question with one letter, one per line, in order."
+}
